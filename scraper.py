@@ -10,8 +10,8 @@ import os, re, datetime, requests
 import numpy as np
 import pandas as pd
 
-# strava_email = os.environ['STRAVA_EMAIL']
-# strava_password = os.environ['STRAVA_PASSWORD']
+strava_email = os.environ['STRAVA_EMAIL']
+strava_password = os.environ['STRAVA_PASSWORD']
 
 class DefaultRateLimiter(RateLimiter):
 	"""
@@ -39,9 +39,11 @@ class Strava_scraper(object):
 		self.athlete = None
 		self.friends = None # list of my friends, dtype = stravalib object
 		self.friend_ids = []
-		self.activities = []
-		self.activity_ids = []
-		self.clubs = []
+		self.activities = [] # list of activities
+		self.activity_ids = [] # list of activity id's for all activities
+		self.clubs = [] # list of athlete clubs
+		self.other_athletes = [] # list of other athlete objects unfollowed by client
+
 	def get_client(self):
 		"""
 		The get_client method create a client object for making requests to the strava API. The Client class accepts an access_token and a rate_limiter object. The method also populates a friends list
@@ -167,32 +169,44 @@ class Strava_scraper(object):
 
 # url = "https://www.strava.com/athletes/7202879#interval?interval=201645&interval_type=week&chart_type=miles&year_offset=0"
 
+	def get_other_athletes(self, list_ath_ids):
+		"""
+		This utility function is provided to populate a list of other athletes. It requires a list of predifined athlete id's.
+		Input: list_ath_ids as list
+		Output: None
+		"""
+		print "Getting other athletes..."
+		print
+		for ath_id in list_ath_ids:
+			if ath_id in self.friend_ids:
+				continue
+			else:
+				athlete = self.client.get_athlete(ath_id)
+				self.other_athletes.append(athlete)
+		print "All done!"
 
-
-
-
-
-
-
-	def main_caller(self):
+	def get_things_main(self):
+		"""
+		This function when called after get client function will populate list attributes for class. This may be done when client wants all(last 200 for feeds) things associated with their athlete, friends, and clubs
+		Input: None
+		Output: None
+		"""
 		print "Getting client activities..."
 		print
-		self.activities.extend(list(self.client.get_activities()))
+		self.activities.extend(list(self.client.get_activities())) # gets all
 		print "Getting friend activities..."
 		print
-		self.activities.extend(list(self.client.get_friend_activities()))
+		self.activities.extend(list(self.client.get_friend_activities())) # only gets last 200 activities from users feed
 		print "Getting athlete clubs..."
 		print
-		self.clubs.extend(self.client.get_athlete_clubs())
+		self.clubs.extend(self.client.get_athlete_clubs()) # gets all
 		club_ids = [club.id for club in self.clubs]
 		print "Getting club activities..."
 		print
 		for club in club_ids:
-			self.activities.extend(list(self.client.get_club_activities(club)))
+			self.activities.extend(list(self.client.get_club_activities(club))) # gets last 200 activities per club
 
 		print "All done!"
 
-
-
 	def __repr__(self):
-		return "This is {} {}'s strava scraper class".format(self.my_athlete.firstname, self.my_athlete.lastname)
+		return "This is {} {}'s strava scraper class".format(self.athlete.firstname, self.athlete.lastname)
