@@ -2,13 +2,16 @@ from stravalib.client import Client
 from stravalib.util.limiter import RateLimitRule, RateLimiter
 from geopy.geocoders import Nominatim
 from collections import deque
-from requests import ConnectionError, HTTPError
 from bs4 import BeautifulSoup
-import os, re, datetime
-import nummpy as np
+from selenium import webdriver
+from time import sleep
+
+import os, re, datetime, requests
+import numpy as np
 import pandas as pd
 
-
+# strava_email = os.environ['STRAVA_EMAIL']
+# strava_password = os.environ['STRAVA_PASSWORD']
 
 class DefaultRateLimiter(RateLimiter):
 	"""
@@ -25,7 +28,6 @@ class DefaultRateLimiter(RateLimiter):
 		self.rules.append(RateLimitRule(requests=40, seconds=60, raise_exc=False))
 		self.rules.append(RateLimitRule(requests=30000, seconds=(3600 * 24), raise_exc=True))
 
-
 class Strava_scraper(object):
 	'''
 	A strava scraper class.
@@ -37,10 +39,9 @@ class Strava_scraper(object):
 		self.athlete = None
 		self.friends = None # list of my friends, dtype = stravalib object
 		self.friend_ids = []
-		self.friend_activities = []
-		self.athlete_ids = [] # not used
-		self.list_of_athletes = [] # not used
-
+		self.activities = []
+		self.activity_ids = []
+		self.clubs = []
 	def get_client(self):
 		"""
 		The get_client method create a client object for making requests to the strava API. The Client class accepts an access_token and a rate_limiter object. The method also populates a friends list
@@ -59,44 +60,28 @@ class Strava_scraper(object):
 		for friend in self.friends:
 			self.friend_ids.append(friend.id)
 
-	def _check_for_id(self, id):
+	def log_in_strava(self):
 		"""
-		The _check_for_id method checks both the friends_ids and athlete_ids class attributes for the input id number.
-		Inputs: id as integer
-		Outputs: None
+		The log_in_strava method uses a selenium webdriver to open and maintain a secure connect with Strava. It returns the driver object.
+		Input: None
+		Output: webdriver object
 		"""
-		return True if (id in self.friend_ids) or (id in self.athlete_ids) else False
+		chromeOptions = webdriver.ChromeOptions()
+		prefs = {"profile.managed_default_content_settings.images":2}
+		chromeOptions.add_experimental_option("prefs",prefs)
 
-	def get_n_athletes(self, n):
-		"""
-		The get_n_athletes method is deprecated because Strava no longer allows authenticated users to indiscriminantly pull activities for a particular user if they are not friends with the authenticated user. This means that by creating a large list of athletes without following them does not help get activities for those atheletes. It would take one parameter n which is the limit on the ammount of athletes to get.
-		Input: n as integer
-		Output: None
-		"""
-		athlete_deq = deque(self.friend_ids, maxlen=n)
-		id_deq = deque(self.friend_ids, maxlen=n)
-		num = 0
-		while len(self.athlete_ids) + len(self.friend_ids) < n:
-			athlete_id = id_deq.popleft()
-			athlete = athlete_deq.popleft()
-			for i in range(100): # try one hundred times
-				while True:
-					try:
-						athletes_friends = self.client.get_athlete_friends(athlete_id)
-					except ConnectionError:
-						continue
-					break
-			for friend in athletes_friends:
-				athlete_deq.append(friend)
-				id_deq.append(friend.id)
-
-			if not self._check_for_id(athlete_id):
-				self.athlete_ids.append(athlete_id)
-				self.list_of_athletes.append(athlete)
-				firstname = re.sub(r'[^\x00-\x7F]+','', athlete.firstname)
-				lastname = re.sub(r'[^\x00-\x7F]+','', athlete.lastname)
-				print "athlete '{} {}' added to list position {}".format(firstname, lastname, num)
-				num += 1
+		driver = webdriver.Chrome('chromedriver.exe',chrome_options=chromeOptions)
+		url = "https://www.strava.com/login"
+		driver.get(url)
+		user = driver.find_element_by_name('email')
+		user.click()
+		user.send_keys(strava_email)
+		pwrd = driver.find_element_by_name('password')
+		pwrd.click()
+		pwrd.send_keys(strava_password)
+		driver.find_element_by_id('login-button').click()
+		sleep(10)
+		return driver
 
 	def _get_state(self, latlng):
 		if latlng:
@@ -109,8 +94,7 @@ class Strava_scraper(object):
 			except KeyError:
 				pass
 
-
-	def _get_activity(self, act_id, state):
+	def _get_activity_by_id(self, act_id, state):
 		try:
 			activity = self.client.get_activity(act_id) # get id with id = act_id from strava client
 		except HTTPError:
@@ -130,31 +114,20 @@ class Strava_scraper(object):
 			print "activity {} not a gps coordinated activity or not in state.".format(act_id)
 			return None
 
-	def get_n_activities(self, start_id, end_id, state='Colorado', n=30000):
-		"""
-		The get_friends_activities method takes 2 parameters. The state which is the subset of the data to save to the self.activities attribute of the scraper class and n which is the max number of entries to add to the list. The default state is 'Colorado'.
-		Input: state as string, n as int
-		Output: None
-		"""
-		print "Getting activities starting with id: {}".format(start_id)
-		print "_" * 50
-		act_id = start_id
-		while len(self.friend_activities) <= n and act_id >= end_id:
-			activity = self._get_activity(act_id, state)
-			if activity:
-				self.friend_activities.append(activity)
-			act_id -= 1
+	def get_soup(self, driver, url):
+		'''
+		Helper function to get soup from a live url, as opposed to a local copy
+		INPUT:
+		-url: str
+		OUTPUT: soup object
+		'''
+		driver.get(url)
+		soup = BeautifulSoup(driver.page_source, 'html.parser')
+		return soup
 
-	def web_scraper(self):
+	def _make_interval_list(self):
 		"""
-		page scraping example:
-		https://www.strava.com/athletes/65920#interval?interval=201702&interval_type=week&chart_type=miles&year_offset=0
-		where 65920 is athlete id
-		201702 is the year and week num
-
-		example
-		<div class="activity entity-details feed-entry" data-updated-at="1486602521" id="Activity-861126207" str-trackable-id="CgwIBTIICL/8zpoDGAESBAoCCAE=">
-
+		This helper function makes an interval list that returns a list of numbers cooresponding with a year and week number for the given year. It only returns a static list as of now but in the future could search farther back. It only goes back to week 1, 2014.
 		"""
 		now = datetime.datetime.now() # current date
 		week_num = now.date().isocalendar()[1] # current week number
@@ -163,15 +136,61 @@ class Strava_scraper(object):
 		new_week_ints = []
 		for row in week_ints:
 			new_week_ints.extend(row) # creates new_week_ints which is week ints flattened
-		week_ints = new_week_ints # consolidating
+		return new_week_ints
+
+	def web_scrape_activities(self):
+		"""
+		This function when called will scrape strava data for athlete activity id's. It will only get those of people I follow. It will store them in a list
+		page scraping example:
+		https://www.strava.com/athletes/65920#interval?interval=201702&interval_type=week&chart_type=miles&year_offset=0
+		where 65920 is athlete id
+		201702 is the year and week num
+
+		example:
+		<div class="activity entity-details feed-entry" data-updated-at="1487545970" id="Activity-873023020" str-trackable-id="CgwIBTIICKyMpaADGAESBAoCCAE=">
+
+		This is whats needed to grab friend activity id's. can't get BeautifulSoup to find the desired class at the moment
+		"""
+		driver = self.log_in_strava()
+		week_ints = self._make_interval_list()
+
 		activity_id_list = [] # need to fiill this thing
 
-		for athlete in athlete_list:
-			for yearweek num in week_ints:
-				get url html
-				pull out div class="activity entity-details feed-entry"
-				append id's to activity_id_list
+		# for athlete in athlete_list:
+		# 	for yearweek num in week_ints:
+		# 		get url html
+		#
+		# 		get_soup
+		#
+		# 		pull out div class="activity entity-details feed-entry"
+		# 		append id's to activity_id_list
 
+# url = "https://www.strava.com/athletes/7202879#interval?interval=201645&interval_type=week&chart_type=miles&year_offset=0"
+
+
+
+
+
+
+
+
+	def main_caller(self):
+		print "Getting client activities..."
+		print
+		self.activities.extend(list(self.client.get_activities()))
+		print "Getting friend activities..."
+		print
+		self.activities.extend(list(self.client.get_friend_activities()))
+		print "Getting athlete clubs..."
+		print
+		self.clubs.extend(self.client.get_athlete_clubs())
+		club_ids = [club.id for club in self.clubs]
+		print "Getting club activities..."
+		print
+		for club in club_ids:
+			self.activities.extend(list(self.client.get_club_activities(club)))
+
+		print "All done!"
 
 
 
