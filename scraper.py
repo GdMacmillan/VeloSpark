@@ -43,6 +43,7 @@ class Strava_scraper(object):
 		self.activity_ids = [] # list of activity id's for all activities
 		self.clubs = [] # list of athlete clubs
 		self.other_athletes = [] # list of other athlete objects unfollowed by client
+		self.geocoder = Nominatim()
 
 	def get_client(self):
 		"""
@@ -72,7 +73,7 @@ class Strava_scraper(object):
 		prefs = {"profile.managed_default_content_settings.images":2}
 		chromeOptions.add_experimental_option("prefs",prefs)
 
-		driver = webdriver.Chrome('chromedriver.exe',chrome_options=chromeOptions)
+		driver = webdriver.Chrome(chrome_options=chromeOptions)
 		url = "https://www.strava.com/login"
 		driver.get(url)
 		user = driver.find_element_by_name('email')
@@ -87,8 +88,7 @@ class Strava_scraper(object):
 
 	def _get_state(self, latlng):
 		if latlng:
-			geoc = Nominatim()
-			location = geoc.reverse(latlng)
+			location = self.geocoder.reverse(latlng)
 			state = None
 			try:
 				state = location.raw['address']['state']
@@ -143,31 +143,28 @@ class Strava_scraper(object):
 	def web_scrape_activities(self):
 		"""
 		This function when called will scrape strava data for athlete activity id's. It will only get those of people I follow. It will store them in a list
-		page scraping example:
-		https://www.strava.com/athletes/65920#interval?interval=201702&interval_type=week&chart_type=miles&year_offset=0
-		where 65920 is athlete id
-		201702 is the year and week num
+		Example url:
+		https://www.strava.com/athletes/2304253#interval?interval=201631&interval_type=week&chart_type=miles&year_offset=0
+		where 2304253 is athlete id
+		201631 is the year and week num
 
-		example:
-		<div class="activity entity-details feed-entry" data-updated-at="1487545970" id="Activity-873023020" str-trackable-id="CgwIBTIICKyMpaADGAESBAoCCAE=">
-
-		This is whats needed to grab friend activity id's. can't get BeautifulSoup to find the desired class at the moment
+		This is whats needed to find and parse html from athlete pages and grab activity id's.
+		Example tag:
+		<a href="/activities/666921221">And the winning number is 400</a> ==$0
 		"""
 		driver = self.log_in_strava()
 		week_ints = self._make_interval_list()
-
+		self.log_in_strava()
 		activity_id_list = [] # need to fiill this thing
 
-		# for athlete in athlete_list:
-		# 	for yearweek num in week_ints:
-		# 		get url html
-		#
-		# 		get_soup
-		#
-		# 		pull out div class="activity entity-details feed-entry"
-		# 		append id's to activity_id_list
-
-# url = "https://www.strava.com/athletes/7202879#interval?interval=201645&interval_type=week&chart_type=miles&year_offset=0"
+		for ath_id in self.friend_ids:
+			for yearweek_int in week_ints:
+				url = "https://www.strava.com/athletes/{}#interval?interval={}&interval_type=week&chart_type=miles&year_offset=0".format(str(ath_id),str(yearweek_int))
+				soup = get_soup(driver, url)
+				for link in soup.find_all('a')
+					if '/activities/' in link.get('href'):
+						regex = re.compile('/activities/([0-9]*)') # look for digits after '/activities/'. Stop upon any character not a number.
+						activity_id_list.append(int(regex.find_all(link))) # cast as numeric and append to list
 
 	def get_other_athletes(self, list_ath_ids):
 		"""
@@ -185,7 +182,7 @@ class Strava_scraper(object):
 				self.other_athletes.append(athlete)
 		print "All done!"
 
-	def get_things_main(self):
+	def get_activities_main(self):
 		"""
 		This function when called after get client function will populate list attributes for class. This may be done when client wants all(last 200 for feeds) things associated with their athlete, friends, and clubs
 		Input: None

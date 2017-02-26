@@ -1,5 +1,4 @@
-# from scraper import Strava_scraper
-# from old_scraper import Strava_scraper
+from scraper import Strava_scraper
 import os, csv, psycopg2
 import pandas as pd
 import numpy as np
@@ -10,6 +9,7 @@ import re
 client_id = int(os.environ["STRAVA_CLIENT_ID"])
 client_secret = os.environ["STRAVA_CLIENT_SECRET"]
 access_token = os.environ["STRAVA_ACCESS_TOKEN"]
+
 
 # conn = psycopg2.connect(dbname='rr_strava_tables', user='gmacmillan', host='localhost')
 
@@ -54,48 +54,61 @@ def remap_athlete_datatypes(df, drop_identifying=True):
     return df.drop_duplicates(subset='id')
 
 def create_athlete_df(ath_list):
+    """
+    This method creates an athletes DataFrame from a list of raw athlete objects from the stravalib api library. It uses remap_athlete_datatypes to get data into format safe for csv conversion.
+    Input: ath_list as list
+    Output: ath_df as DataFrame
+    """
     columns = ['id', 'resource_state', 'firstname', 'lastname', 'profile_medium', 'profile', 'city', 'state', 'country', 'sex', 'friend', 'follower', 'premium', 'created_at', 'updated_at']
 
     ath_feat_matrix = np.array([[getattr(athlete, atribute) for atribute in columns] for athlete in ath_list])
-
     ath_df = pd.DataFrame(ath_feat_matrix, columns=columns)
-    # ath_df['friend'] = ath_df['friend'].apply(lambda x: 'no' if not x else x)
-    # ath_df['follower'] = ath_df['follower'].apply(lambda x: 'no' if not x else x)
+    ath_df = ath_df.drop_duplicates(subset='id')
     ath_df = remap_athlete_datatypes(ath_df)
     return ath_df
 
-def remap_activity_datatypes(df, convert_objects=True):
+def remap_activity_datatypes(df):
     """
     This method is to convert objects to numeric values when found. This pandas method is deprecated so may need to perform column operations explicitly in future.
     Input: df as DataFrame
     Output: df as DataFrame
     """
-    str_cols = ['name', 'type', 'external_id']
-    #
-    for col in str_cols:
-        df[col] = df[k].apply(lambda x: re.sub(r'[^\x00-\x7F]+','', str(x), 1))
+    str_cols = ['external_id', 'name', 'type']
 
-    otherdatatypes = {'distance':'float', 'total_elevation_gain':'float', 'average_speed':'float', 'max_speed':'float'}
+    for col in str_cols:
+        df[col] = df[col].apply(lambda x: re.sub(r'[^\x00-\x7F]+',r'',x) if x else 'unspecified {}'.format(col), 1)
+
+    time_delta_cols = ['moving_time', 'elapsed_time']
+
+    for col in time_delta_cols:
+        df[col] = df[col].apply(lambda x: x.total_seconds(), 1)
+
+    otherdatatypes = {'id':'int', 'resource_state': 'int', 'distance':'float', 'total_elevation_gain':'float', 'achievement_count':'int', 'kudos_count':'int', 'comment_count':'int', 'athlete_count':'int', 'photo_count':'int', 'total_photo_count':'int', 'trainer':'bool', 'commute':'bool', 'manual':'bool', 'private':'bool', 'flagged':'bool', 'average_speed':'float', 'max_speed':'float', 'average_watts':'float', 'max_watts':'float', 'weighted_average_watts':'float', 'kilojoules':'float', 'device_watts':'bool', 'has_heartrate':'bool', 'average_heartrate':'float', 'max_heartrate':'float'}
 
     for k, v in otherdatatypes.iteritems():
         df[k] = df[k].astype(v)
 
-    if convert_objects:
-        return df.convert_objects(convert_numeric=True)
-    else:
-        return df
+    return df
 
 def create_activity_df(act_list):
+    """
+    This method creates an activities DataFrame from a list of raw activity objects from the stravalib api library. It uses remap_activity_datatypes to get data into format safe for csv conversion.
+    Input: act_list as list
+    Output: act_df as DataFrame
+    """
+
     columns = ['id', 'resource_state', 'external_id', 'upload_id', 'athlete', 'name', 'distance', 'moving_time', 'elapsed_time', 'total_elevation_gain', 'type', 'start_date', 'start_date_local', 'timezone', 'start_latlng', 'end_latlng', 'achievement_count', 'kudos_count', 'comment_count', 'athlete_count', 'photo_count', 'total_photo_count', 'map', 'trainer', 'commute', 'manual', 'private', 'flagged', 'average_speed', 'max_speed', 'average_watts', 'max_watts', 'weighted_average_watts', 'kilojoules', 'device_watts', 'has_heartrate', 'average_heartrate', 'max_heartrate']
 
     act_feat_matrix = np.array([[getattr(activity, atribute) for atribute in columns] for activity in act_list])
-
     act_df = pd.DataFrame(act_feat_matrix, columns=columns)
+    act_df = act_df.drop('upload_id', 1)
+    act_df = act_df.drop_duplicates(subset='id')
     act_ls = act_df['athlete'].tolist()
     act_df['athlete'] = pd.Series([ath.id for ath in act_ls])
     act_df['start_latlng'] = act_df['start_latlng'].apply(lambda x: list(x) if x else None, 1)
     act_df['end_latlng'] = act_df['end_latlng'].apply(lambda x: list(x) if x else None, 1)
     act_df['map'] = act_df['map'].apply(lambda x: {'id': x.id, 'summary_polyline': x.summary_polyline, 'resource_state': x.resource_state}, 1)
+    act_df = remap_activity_datatypes(act_df)
     return act_df
 
 def pickle_the_df(df, filename):
