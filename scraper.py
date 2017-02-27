@@ -148,8 +148,7 @@ class Strava_scraper(object):
 		driver = self.log_in_strava()
 		week_ints = self._make_interval_list()
 
-		for ath_id in self.friend_ids[115:]: #starting on index 115 tea wright
-		 	# second time failed on athlete 66299
+		for ath_id in self.friend_ids[191:]: #starting on index 191, athlete 66299
 			for yearweek_int in week_ints:
 				url = "https://www.strava.com/athletes/{}#interval?interval={}&interval_type=week&chart_type=miles&year_offset=0".format(str(ath_id),str(yearweek_int))
 				soup = self.get_soup(driver, url)
