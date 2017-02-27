@@ -38,12 +38,11 @@ class Strava_scraper(object):
 		self.client = None
 		self.athlete = None
 		self.friends = None # list of my friends, dtype = stravalib object
+		self.activity_ids = [] # list of activity ids scraped from strava
 		self.friend_ids = []
 		self.activities = [] # list of activities
-		self.activity_ids = [] # list of activity id's for all activities
 		self.clubs = [] # list of athlete clubs
 		self.other_athletes = [] # list of other athlete objects unfollowed by client
-		self.geocoder = Nominatim()
 
 	def get_client(self):
 		"""
@@ -86,34 +85,12 @@ class Strava_scraper(object):
 		sleep(10)
 		return driver
 
-	def _get_state(self, latlng):
-		if latlng:
-			location = self.geocoder.reverse(latlng)
-			state = None
-			try:
-				state = location.raw['address']['state']
-			 	return state
-			except KeyError:
-				pass
-
-	def _get_activity_by_id(self, act_id, state):
+	def _get_activity_by_id(self, act_id):
 		try:
 			activity = self.client.get_activity(act_id) # get id with id = act_id from strava client
-		except HTTPError:
-			print "id:{}; client HTTP error when getting activity!!!".format(act_id)
-			return None
-		latlng = activity.start_latlng
-		if not latlng:
-			return None
-		act_ath_id = activity.athlete.id
-		firstname = re.sub(r'[^\x00-\x7F]+','', activity.athlete.firstname)
-		lastname = re.sub(r'[^\x00-\x7F]+','', activity.athlete.lastname)
-		act_state = self._get_state(list(latlng))
-		if act_ath_id in self.friend_ids and act_state == state:
-			print "activity id: {} belonging to {} {}, added to list".format(act_id, firstname, lastname)
 			return activity
-		else:
-			print "activity {} not a gps coordinated activity or not in state.".format(act_id)
+		except HTTPError:
+			print "client HTTP error when getting activity {}!!!".format(act_id)
 			return None
 
 	def get_soup(self, driver, url):
@@ -140,6 +117,22 @@ class Strava_scraper(object):
 			new_week_ints.extend(row) # creates new_week_ints which is week ints flattened
 		return new_week_ints
 
+	def _get_activities_from_page(self, soup):
+		temp_act_id_list = []
+		regex = re.compile('/activities/([0-9]*)') # compile regex function
+		for link in soup.find_all('a'):
+			text = link.get('href')
+			try:
+				act_id = regex.findall(text) # look for digits after '/activities/'. Stop upon any character not a number. only looking for 1st item found. should be unicode string.
+				try: # only looking for integers 9 digits long
+					temp_act_id_list.append(int(act_id[0])) # append number to small list
+					print act_id[0]
+				except (IndexError, ValueError):
+					continue
+			except TypeError:
+				continue
+		return temp_act_id_list
+
 	def web_scrape_activities(self):
 		"""
 		This function when called will scrape strava data for athlete activity id's. It will only get those of people I follow. It will store them in a list
@@ -154,17 +147,19 @@ class Strava_scraper(object):
 		"""
 		driver = self.log_in_strava()
 		week_ints = self._make_interval_list()
-		self.log_in_strava()
-		activity_id_list = [] # need to fiill this thing
 
-		for ath_id in self.friend_ids:
+		for ath_id in self.friend_ids[115:]: #starting on index 115 tea wright
+		 	# second time failed on athlete 66299
 			for yearweek_int in week_ints:
 				url = "https://www.strava.com/athletes/{}#interval?interval={}&interval_type=week&chart_type=miles&year_offset=0".format(str(ath_id),str(yearweek_int))
-				soup = get_soup(driver, url)
-				for link in soup.find_all('a')
-					if '/activities/' in link.get('href'):
-						regex = re.compile('/activities/([0-9]*)') # look for digits after '/activities/'. Stop upon any character not a number.
-						activity_id_list.append(int(regex.find_all(link))) # cast as numeric and append to list
+				soup = self.get_soup(driver, url)
+				self.activity_ids.extend(self._get_activities_from_page(soup))
+				print "added {}'s {} intervals to list".format(ath_id, yearweek_int)
+				sleep(np.random.exponential(1.0) * 2)
+
+		self.activity_ids = set(self.activity_ids)
+		print ""
+		print "All done!"
 
 	def get_other_athletes(self, list_ath_ids):
 		"""
