@@ -1,5 +1,6 @@
 from scraper import Strava_scraper
 from geopy.geocoders import Nominatim
+from math import pi
 import os, csv
 import pandas as pd
 import numpy as np
@@ -129,6 +130,40 @@ def create_activity_df(act_list):
 
     act_df = remap_activity_datatypes(act_df)
     return act_df
+
+def add_closest_city_feature(act_df):
+    colorado_cities = pd.read_csv('data/colorado_cities.csv', encoding='utf-8')
+
+    x = pi/180.0
+    lat1 = act_df.start_lat.values
+    lon1 = act_df.start_lng.values
+    lat2 = colorado_cities.city_lat.values.reshape((colorado_cities.shape[0],1))
+    lon2 = colorado_cities.city_lng.values.reshape((colorado_cities.shape[0],1))
+
+
+    a = (90.0-lat1)*(x)
+    b = (90.0-lat2)*(x)
+    theta = (lon2-lon1)*(x)
+    c = np.arccos((np.cos(a)*np.cos(b)) + (np.sin(a)*np.sin(b)*np.cos(theta)))
+    # cities = colorado_cities.city.values.reshape((colorado_cities.shape[0],1))
+    cities = colorado_cities.city.values
+    def f(x):
+        return cities[x]
+    func = np.vectorize(f)
+    sorted_cities = func(np.argsort(c, axis=0))
+    act_df['closest_city'] = pd.Series(sorted_cities[0, :])
+    return act_df
+
+def get_distance(lat1, lon1, lat2, lon2):
+    radius = 6367000 # meters
+    x = np.pi/180.0
+
+    dlon = lon2 - lon1
+    dlat = lat2 - lat1
+    a = np.sin(dlat/2)**2 + np.cos(lat1) * np.cos(lat2) * np.sin(dlon/2)**2
+    c = 2 * np.arcsin(np.sqrt(a))
+    return radius*c
+
 
 def pickle_the_df(df, filename):
     df.to_pickle(filename)
