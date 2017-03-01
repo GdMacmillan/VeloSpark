@@ -5,13 +5,11 @@ from collections import deque
 from bs4 import BeautifulSoup
 from selenium import webdriver
 from time import sleep
+from setup import write_list_to_csv
 
-import os, re, datetime, requests
+import os, re, datetime, requests, csv
 import numpy as np
 import pandas as pd
-
-strava_email = os.environ['STRAVA_EMAIL']
-strava_password = os.environ['STRAVA_PASSWORD']
 
 class DefaultRateLimiter(RateLimiter):
 	"""
@@ -32,9 +30,11 @@ class Strava_scraper(object):
 	'''
 	A strava scraper class.
 	'''
-	def __init__(self, client_secret, access_token):
+	def __init__(self, client_secret, access_token, strava_email, strava_password):
 		self.client_secret = client_secret
 		self.access_token = access_token
+		self.strava_email = strava_email
+		self.strava_password = strava_password
 		self.client = None
 		self.athlete = None
 		self.friends = None # list of my friends, dtype = stravalib object
@@ -72,17 +72,20 @@ class Strava_scraper(object):
 		prefs = {"profile.managed_default_content_settings.images":2}
 		chromeOptions.add_experimental_option("prefs",prefs)
 
+		print "logging in..."
+		print
 		driver = webdriver.Chrome(chrome_options=chromeOptions)
 		url = "https://www.strava.com/login"
 		driver.get(url)
 		user = driver.find_element_by_name('email')
 		user.click()
-		user.send_keys(strava_email)
+		user.send_keys(self.strava_email)
 		pwrd = driver.find_element_by_name('password')
 		pwrd.click()
-		pwrd.send_keys(strava_password)
+		pwrd.send_keys(self.strava_password)
 		driver.find_element_by_id('login-button').click()
 		sleep(10)
+		print "complete!"
 		return driver
 
 	def _get_activity_by_id(self, act_id):
@@ -126,14 +129,14 @@ class Strava_scraper(object):
 				act_id = regex.findall(text) # look for digits after '/activities/'. Stop upon any character not a number. only looking for 1st item found. should be unicode string.
 				try: # only looking for integers 9 digits long
 					temp_act_id_list.append(int(act_id[0])) # append number to small list
-					print act_id[0]
+					# print act_id[0]
 				except (IndexError, ValueError):
 					continue
 			except TypeError:
 				continue
 		return temp_act_id_list
 
-	def web_scrape_activities(self):
+	def web_scrape_activities(self, start_n=0, sleep=False, sleep_time=2):
 		"""
 		This function when called will scrape strava data for athlete activity id's. It will only get those of people I follow. It will store them in a list
 		Example url:
@@ -148,16 +151,23 @@ class Strava_scraper(object):
 		driver = self.log_in_strava()
 		week_ints = self._make_interval_list()
 
-		for ath_id in self.friend_ids[191:]: #starting on index 191, athlete 66299
+		print "scraping athletes"
+		for ath_id in self.friend_ids[start_n:]: #starting on index 191, athlete 66299
+			athlete_act_id_list = []
 			for yearweek_int in week_ints:
 				url = "https://www.strava.com/athletes/{}#interval?interval={}&interval_type=week&chart_type=miles&year_offset=0".format(str(ath_id),str(yearweek_int))
 				soup = self.get_soup(driver, url)
-				self.activity_ids.extend(self._get_activities_from_page(soup))
-				print "added {}'s {} intervals to list".format(ath_id, yearweek_int)
-				sleep(np.random.exponential(1.0) * 2)
+				# self.activity_ids.extend(self._get_activities_from_page(soup))
+				# print "added {}'s {} intervals to list".format(ath_id, yearweek_int)
+				if sleep:
+					sleep(np.random.exponential(1.0) * sleep_time) # pause for amount of sleep time before completing each loop
+				athlete_act_id_list.extend(self._get_activities_from_page(soup))
+			filename = "{}_act_ids.csv".format(ath_id)
+			filepath = os.path.join('activity_files', filename)
+			write_list_to_csv(athlete_act_id_list, filepath)
 
 		self.activity_ids = set(self.activity_ids)
-		print ""
+
 		print "All done!"
 
 	def get_other_athletes(self, list_ath_ids):
@@ -175,6 +185,14 @@ class Strava_scraper(object):
 				athlete = self.client.get_athlete(ath_id)
 				self.other_athletes.append(athlete)
 		print "All done!"
+
+	def load_activity_ids(self, act_id_csv_filename):
+		"""
+		This utility function should only be called to populate the class attribute 'activity_ids' from a csv when a new scraper has been instantiated
+		"""
+		with open(act_id_csv_filename) as f:
+  			reader = csv.reader(f)
+  			self.activity_ids = np.array(next(reader), dtype='int')
 
 	def get_activities_main(self):
 		"""
@@ -198,6 +216,14 @@ class Strava_scraper(object):
 			self.activities.extend(list(self.client.get_club_activities(club))) # gets last 200 activities per club
 
 		print "All done!"
+
+	def get_activities_from_ids(self):
+		requested_activity = None
+		while len(self.activity_ids) > 0:
+			requested_activity = self._get_activity_by_id(self.activity_ids[0])
+			if requested_activity:
+				self.activities.append(requested_activity)
+			self.activity_ids = self.activity_ids[1:]
 
 	def __repr__(self):
 		return "This is {} {}'s strava scraper class".format(self.athlete.firstname, self.athlete.lastname)

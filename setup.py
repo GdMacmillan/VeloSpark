@@ -1,18 +1,25 @@
-from scraper import Strava_scraper
-from geopy.geocoders import Nominatim
 from math import pi
-import os, csv
+import os, csv, json
 import pandas as pd
 import numpy as np
+import reverse_geocoder as rg
 import re, stravalib
 
 
 # my user client secrete and access token. Not using access token for some reason. Not sure why I don't need it.
-client_id = int(os.environ["STRAVA_CLIENT_ID"])
-client_secret = os.environ["STRAVA_CLIENT_SECRET"]
-access_token = os.environ["STRAVA_ACCESS_TOKEN"]
 
-geocoder = Nominatim()
+try:
+    client_secret = os.environ["STRAVA_CLIENT_SECRET"]
+    access_token = os.environ["STRAVA_ACCESS_TOKEN"]
+    strava_email = os.environ['STRAVA_EMAIL']
+    strava_password = os.environ['STRAVA_PASSWORD']
+except:
+    with open('strava.json') as f:
+	data = json.load(f)
+    client_secret = data["STRAVA_CLIENT_SECRET"]
+    access_token = data["STRAVA_ACCESS_TOKEN"]
+    strava_email = data['STRAVA_EMAIL']
+    strava_password = data['STRAVA_PASSWORD']
 
 def write_list_to_csv(my_list, filename):
     """
@@ -23,14 +30,6 @@ def write_list_to_csv(my_list, filename):
     my_file = open(filename, 'wb')
     wr = csv.writer(my_file)
     wr.writerow(my_list)
-
-def get_state(geocoder, lat, lng):
-    location = geocoder.reverse([lat, lng])
-    try:
-        state = location.raw['address']['state']
-        return state
-    except KeyError:
-        return "State not available"
 
 def remap_athlete_datatypes(df, drop_identifying=True):
     """
@@ -113,23 +112,34 @@ def create_activity_df(act_list):
     act_df['end_lat'] = pd.Series([end[0] if type(end) == stravalib.attributes.LatLon else float('nan') for end in act_df.end_latlng.values])
     act_df['end_lng'] = pd.Series([end[1] if type(end) == stravalib.attributes.LatLon else float('nan') for end in act_df.end_latlng.values])
 
-
-    # act_df['start_latlng'] = act_df['start_latlng'].apply(lambda x: list(x) if x else None, 1)
-    # act_df['end_latlng'] = act_df['end_latlng'].apply(lambda x: list(x) if x else None, 1)
-    # act_df['map'] = act_df['map'].apply(lambda x: {'id': x.id, 'summary_polyline': x.summary_polyline, 'resource_state': x.resource_state}, 1)
-
     # drop rows where athlete id is nan
     act_df = act_df[act_df['athlete_id'].fillna(0.0) > 0]
     # drop rows where gps data is null
     act_df = act_df[act_df['start_lat'].fillna(0.0) > 0]
-
-    act_df['state'] = pd.Series([get_state(geocoder, start_lat, start_lng) for start_lat, start_lng in zip(act_df.start_lat.values, act_df.start_lng.values)])
     # drop columns that we don't potentially need
     act_df.drop(['athlete', 'upload_id', 'resource_state', 'external_id', 'start_latlng', 'end_latlng', 'map'], 1, inplace=True)
 
-
     act_df = remap_activity_datatypes(act_df)
     return act_df
+
+# @rate_limited(1)
+def get_state(lat, lng):
+    results = rg.search((lat, lng))
+    return results[0]['admin1']
+
+def add_state_feature(act_df):
+    act_df['state'] = pd.Series([get_state(start_lat, start_lng) for start_lat, start_lng in zip(act_df.start_lat.values, act_df.start_lng.values)])
+    return act_df
+
+def get_distance(lat1, lon1, lat2, lon2):
+    radius = 6367000 # meters
+    x = np.pi/180.0
+
+    dlon = lon2 - lon1
+    dlat = lat2 - lat1
+    a = np.sin(dlat/2)**2 + np.cos(lat1) * np.cos(lat2) * np.sin(dlon/2)**2
+    c = 2 * np.arcsin(np.sqrt(a))
+    return radius*c
 
 def add_closest_city_feature(act_df):
     colorado_cities = pd.read_csv('data/colorado_cities.csv', encoding='utf-8')
@@ -153,17 +163,6 @@ def add_closest_city_feature(act_df):
     sorted_cities = func(np.argsort(c, axis=0))
     act_df['closest_city'] = pd.Series(sorted_cities[0, :])
     return act_df
-
-def get_distance(lat1, lon1, lat2, lon2):
-    radius = 6367000 # meters
-    x = np.pi/180.0
-
-    dlon = lon2 - lon1
-    dlat = lat2 - lat1
-    a = np.sin(dlat/2)**2 + np.cos(lat1) * np.cos(lat2) * np.sin(dlon/2)**2
-    c = 2 * np.arcsin(np.sqrt(a))
-    return radius*c
-
 
 def pickle_the_df(df, filename):
     df.to_pickle(filename)
