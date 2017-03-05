@@ -59,7 +59,7 @@
 
         <div class='form-container'>
             <div class='inner-container'>
-                <form action='/predict_runs' method='POST'>
+                <form action='/results' method='POST'>
                     <div class="form-group">
                         <label for="Distance(mi)">Distance</label>
                         <input type="integer" class="form-control" id='distance', placeholder='distance'>
@@ -71,10 +71,10 @@
                         <label for="Elevation Gain">Elevation Gain</label>
                         <input type="integer" class="form-control" id='elevation', placeholder='elevation gain'>
                     </div>
-                    <div id="the-basics">
+                    <!-- <div id="the-basics">
                         <input type="text" class="typeahead tt-query" autocomplete="off" spellcheck="false">
-                    </div>
-                    <!-- <div class="form-group">
+                    </div> -->
+                    <div class="form-group">
                         <label for="City">City</label>
                         <select type="text" class="form-control" id='city'>
                             <option selected>Open this select menu</option>
@@ -82,7 +82,7 @@
                             <option value="2">Two</option>
                             <option value="3">Three</option>
                         </select>
-                    </div> -->
+                    </div>
                     <button type="submit" class="btn orange">Submit</button>
                 </form>
             </div>
