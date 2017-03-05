@@ -56,38 +56,42 @@
             </div><!-- /.navbar-collapse -->
           </div><!-- /.container-fluid -->
         </nav>
-
-        <div class='form-container'>
-            <div class='inner-container'>
-                <form action='/results' method='POST'>
-                    <div class="form-group">
-                        <label for="Distance(mi)">Distance</label>
-                        <input type="integer" class="form-control" id='distance', placeholder='distance'>
-                    </div>
-
-                    <div class="form-group">
-
-
-                        <label for="Elevation Gain">Elevation Gain</label>
-                        <input type="integer" class="form-control" id='elevation', placeholder='elevation gain'>
-                    </div>
-                    <!-- <div id="the-basics">
-                        <input type="text" class="typeahead tt-query" autocomplete="off" spellcheck="false">
-                    </div> -->
-                    <div class="form-group">
-                        <label for="City">City</label>
-                        <select type="text" class="form-control" id='city'>
-                            <option selected>Open this select menu</option>
-                            <option value="1">One</option>
-                            <option value="2">Two</option>
-                            <option value="3">Three</option>
-                        </select>
-                    </div>
-                    <button type="submit" class="btn orange">Submit</button>
-                </form>
-            </div>
-        </div>
     </div>
+    <div class="activity-description">
+        <p>Excellent, let's go {{displayed_activity}}!</p>
+    </div>
+    <div class='form-container'>
+        <div class='inner-container'>
+            <form action='/results' method='POST'>
+                <div class="form-group">
+                    <label for="distance">How far do you want to go?</label>
+                    <input type="number" class="form-control" name='distance', placeholder='distance (mi)'>
+                </div>
+                <div class="form-group">
+                    <label for="elevation_gain">How much climbing do you want your ride to have?</label>
+                    <input type="number" class="form-control" name='elevation_gain', placeholder='elevation gain (ft)'>
+                </div>
+                <div class="form-group">
+                    <label for="moving_time">If You are constrained for time, what would you like your moving time to be?</label>
+                    <input type="number" class="form-control" name='moving_time', placeholder='moving time (hrs)'>
+                </div>
+                <!-- <div id="the-basics">
+                <input type="text" class="typeahead tt-query" autocomplete="off" spellcheck="false">
+            </div> -->
+            <div class="form-group">
+                <label for="city">What's the nearest city</label>
+                <select type="text" class="form-control" name='city'>
+                    <option selected>Select a city</option>
+                    {% for o in city_list %}
+                    <option value="{{ o }}">{{ o }}</option>
+                    {% endfor %}
+                    <option value="3">Three</option> -->
+                </select>
+            </div>
+            <button type="submit" class="btn orange">Submit</button>
+        </form>
+    </div>
+</div>
 </div>
 </body>
 </html>

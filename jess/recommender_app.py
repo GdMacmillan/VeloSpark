@@ -1,10 +1,11 @@
 
 from collections import Counter
-from flask import Flask, request, render_template
+from flask import Flask, request, render_template, session
 import cPickle as pickle
 import numpy as np
 import pandas as pd # also temporary
 from clustering import load_data, get_labels
+import os
 # sys.path.append('../')
 #Initialize app
 
@@ -59,7 +60,7 @@ def get_activity_data(activites, df):
 
 
 # Home page with options to predict rides or runs
-@app.route('/', methods=['GET','POST'])
+@app.route('/', methods=['GET'])
 def index():
     return render_template('index.html')
 
@@ -69,29 +70,41 @@ def how_it_works():
     return render_template('how_it_works.html')
 
 # Contact information page to link various social media
-@app.route('/contact', methods=['GET','POST'])
+@app.route('/contact', methods=['GET'])
 def contact():
     return render_template('contact.html')
 
 # This is the form page where users fill out whether they would like bike or run recommendations
-@app.route('/form', methods=['GET', 'POST'])
-def get_activity_predictors():
-    return render_template('form.html')
+@app.route('/form/<activity>', methods=['GET', 'POST'])
+def get_activity_predictors(activity):
+    city_list = list(pd.read_csv('data/colorado_cities.csv').city.values)
+    if activity == 'bike':
+        displayed_activity = 'cycling'
+    else:
+        displayed_activity = 'running'
+
+    session['activity'] = activity
+    return render_template('form.html', city_list=city_list, displayed_activity=displayed_activity)
 
 # This displays user inputs froms the form page
 @app.route('/results', methods=['GET', 'POST'] )
 def predict_activities():
-    user_input = int(request.form['form'])
-
-    item_similarity_rides, rides_clusterer, rides_mapper = load_rides()
-    out = 'The index is {}'
-    rides = top_k_labels(item_similarity_rides, rides_mapper, user_input)
-    return render_template('results.html')
+    distance = int(request.form['distance'])
+    elevation_gain = int(request.form['elevation_gain'])
+    moving_time = int(request.form['moving_time'])
+    result = distance*elevation_gain*moving_time
+    city = request.form['city']
+    activity = session['activity']
+    # data = {'distance': distance, 'elevation_gain': elevation_gain, 'moving_time': moving_time, 'city': city}
+    # item_similarity_rides, rides_clusterer, rides_mapper = load_rides()
+    # out = 'The index is {}'
+    # rides = top_k_labels(item_similarity_rides, rides_mapper, user_input)
+    return render_template('results.html', result=result, city=city, activity=activity)
 
 @app.route('/map', methods=['POST'] )
 def go_to_map():
     return render_template('map.html')
 
-
+app.secret_key = os.urandom(24)
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=8080, debug=True)
