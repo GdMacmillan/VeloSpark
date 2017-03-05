@@ -51,12 +51,24 @@
           </div><!-- /.container-fluid -->
         </nav>
         <div class='results-main'>
-            <h1>{{result}}</h1>
-            <!-- <h1>{{distance}}</h1>
-            <h1>{{elevation_gain}}</h1>
-            <h1>{{moving_time}}</h1> -->
-            <h1>{{city}}</h1>
-            <h1>{{activity}}</h1>
+            <table>
+              <thead>
+                <th>activity name</th>
+                <th>distance (mi)</th>
+                <th>elevation gain (ft)</th>
+                <th>nearest city</th>
+              </thead>
+              <tbody>
+                {% for c1, c2, c3, c4 in data %}
+                  <tr>
+                    <td>{{ c1 }}</td>
+                    <td>{{ c2 }}</td>
+                    <td>{{ c3 }}</td>
+                    <td>{{ c4 }}</td>
+                  </tr>
+                {% endfor %}
+              </tbody>
+            </table>
             <div class='inner-container'>
             </div>
         </div>

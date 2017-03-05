@@ -58,7 +58,6 @@ def get_activity_data(activites, df):
         c4.append(activity[0, 39])
     return zip(c1, c2, c3, c4)
 
-
 # Home page with options to predict rides or runs
 @app.route('/', methods=['GET'])
 def index():
@@ -95,11 +94,18 @@ def predict_activities():
     result = distance*elevation_gain*moving_time
     city = request.form['city']
     activity = session['activity']
-    # data = {'distance': distance, 'elevation_gain': elevation_gain, 'moving_time': moving_time, 'city': city}
-    # item_similarity_rides, rides_clusterer, rides_mapper = load_rides()
-    # out = 'The index is {}'
-    # rides = top_k_labels(item_similarity_rides, rides_mapper, user_input)
-    return render_template('results.html', result=result, city=city, activity=activity)
+
+    user_input = 1
+
+    if activity == 'bike':
+        item_similarity_rides, rides_clusterer, rides_mapper = load_rides()
+        rides = top_k_labels(item_similarity_rides, rides_mapper, user_input)
+        return render_template('results.html', data=get_activity_data(rides, co_rides_df))
+    else:
+        item_similarity_runs, runs_clusterer, runs_mapper = load_runs()
+        runs = top_k_labels(item_similarity_runs, runs_mapper, user_input)
+        return render_template('results.html', data=get_activity_data(runs, co_runs_df))
+
 
 @app.route('/map', methods=['POST'] )
 def go_to_map():
@@ -107,4 +113,5 @@ def go_to_map():
 
 app.secret_key = os.urandom(24)
 if __name__ == '__main__':
+
     app.run(host='0.0.0.0', port=8080, debug=True)
