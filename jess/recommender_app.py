@@ -45,7 +45,12 @@ def load_rides():
 
     return item_similarity_rides, rides_clusterer, rides_mapper
 
+def get_city_lat_lng(city):
+    colorado_cities = pd.read_csv('data/colorado_cities.csv')
+    return colorado_cities[colorado_cities.city == city].values[0,2:4]
+
 def top_k_labels(similarity, mapper, label_idx, k=3):
+    print similarity.shape
     return [mapper[x] for x in np.argsort(similarity[label_idx,:])[:-k-1:-1]]
 
 def get_activity_data(activites, df):
@@ -88,23 +93,24 @@ def get_activity_predictors(activity):
 # This displays user inputs froms the form page
 @app.route('/results', methods=['GET', 'POST'] )
 def predict_activities():
-    distance = int(request.form['distance'])
-    elevation_gain = int(request.form['elevation_gain'])
-    moving_time = int(request.form['moving_time'])
-    result = distance*elevation_gain*moving_time
+    
+    distance = int(request.form['distance']) * 1609.34 # convert from miles to meters
+    elevation_gain = int(request.form['elevation_gain']) * 0.3048 # convert from ft to meters
+    moving_time = int(request.form['moving_time']) * 3600 # convert hours to seconds
     city = request.form['city']
     activity = session['activity']
-
-    user_input = 1
+    pred_arr = np.concatenate((np.array([distance, elevation_gain, moving_time]), get_city_lat_lng(city)), axis=0)
 
     if activity == 'bike':
         item_similarity_rides, rides_clusterer, rides_mapper = load_rides()
-        rides = top_k_labels(item_similarity_rides, rides_mapper, user_input)
-        return render_template('results.html', data=get_activity_data(rides, co_rides_df))
+        label = rides_clusterer.predict(pred_arr)[0]
+        rides = top_k_labels(item_similarity_rides, rides_mapper, label)
+        return render_template('results.html', data=get_activity_data(rides, co_rides_df)) # get activity data uses dataframe. would like to use postgres server
     else:
         item_similarity_runs, runs_clusterer, runs_mapper = load_runs()
-        runs = top_k_labels(item_similarity_runs, runs_mapper, user_input)
-        return render_template('results.html', data=get_activity_data(runs, co_runs_df))
+        label = runs_clusterer.predict(pred_arr)[0]
+        runs = top_k_labels(item_similarity_runs, runs_mapper, label)
+        return render_template('results.html', data=get_activity_data(runs, co_runs_df)) # get activity data uses dataframe. would like to use postgres server
 
 
 @app.route('/map', methods=['POST'] )

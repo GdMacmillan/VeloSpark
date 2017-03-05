@@ -67,7 +67,7 @@ if __name__ == '__main__':
 
     # Export ride similarity matrix via numpy save
     with open('data/item_similarity_rides.npy', 'wb') as f:
-        np.save(f, item_similarity_runs)
+        np.save(f, item_similarity_rides)
 
     # Export run clustering model via pickle
     with open('data/runs_clusterer.pkl', 'wb') as f:

@@ -20,8 +20,8 @@ def load_data():
     return co_runs_df, co_rides_df
 
 def get_labels(runs_df, rides_df, n_clusters_rides=550, n_clusters_runs=125):
-    X_runs = runs_df[['distance', 'total_elevation_gain', 'start_lat', 'start_lng', 'end_lat', 'end_lng']]
-    X_rides = rides_df[['distance', 'total_elevation_gain', 'start_lat', 'start_lng', 'end_lat', 'end_lng']]
+    X_runs = runs_df[['distance', 'total_elevation_gain', 'moving_time', 'start_lat', 'start_lng']]
+    X_rides = rides_df[['distance', 'total_elevation_gain', 'moving_time', 'start_lat', 'start_lng']]
     kmeans_runs = KMeans(init='k-means++', n_clusters=n_clusters_runs, n_init=10).fit(X_runs)
     kmeans_rides = KMeans(init='k-means++', n_clusters=n_clusters_rides, n_init=10).fit(X_rides)
     runs_df['label'] = pd.Series(kmeans_runs.predict(X_runs), dtype='int')
