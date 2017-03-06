@@ -10,13 +10,18 @@ body {
 .navbar {
     z-index: 1000;
     border: none;
-    border-radius: 0 ;
+    border-radius: 0;
     margin-bottom: 0;
 }
 
 .navbar li a, a.navbar-brand {
     color: #FC4C02;
     text-shadow: none;
+    font-weight: bold;
+}
+
+.navbar a.navbar-brand {
+    font-size: 32px;
 }
 
 .navbar-right li:hover {

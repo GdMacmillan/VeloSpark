@@ -71,7 +71,7 @@ def index():
 # How it works page describing the recommender
 @app.route('/how_it_works', methods=['GET'])
 def how_it_works():
-    return render_template('how_it_works.html')
+    return render_template('how_it_works_blog_post.html')
 
 # Contact information page to link various social media
 @app.route('/contact', methods=['GET'])
@@ -93,7 +93,7 @@ def get_activity_predictors(activity):
 # This displays user inputs froms the form page
 @app.route('/results', methods=['GET', 'POST'] )
 def predict_activities():
-    
+
     distance = int(request.form['distance']) * 1609.34 # convert from miles to meters
     elevation_gain = int(request.form['elevation_gain']) * 0.3048 # convert from ft to meters
     moving_time = int(request.form['moving_time']) * 3600 # convert hours to seconds
