@@ -44,7 +44,6 @@ def load_rides():
 
 def get_city_lat_lng(city):
     colorado_cities = pd.read_csv('data/colorado_cities.csv')
-    print colorado_cities[colorado_cities.city == city].values[0, 2:4]
     return colorado_cities[colorado_cities.city == city].values[0, 2:4]
 
 def top_k_labels(similarity, mapper, label_idx, k=5):
@@ -70,8 +69,8 @@ def get_activity_data(activities, df):
     for activity_id in activities[:10]:
         activity = df[df['id'] == activity_id].values
         c1.append(activity[0, 1])
-        c2.append(activity[0, 2] * 0.000621371)
-        c3.append(activity[0, 5] * 3.28084)
+        c2.append(np.round(activity[0, 2] * 0.000621371, 1))
+        c3.append(int(np.round(activity[0, 5] * 3.28084, 0)))
         c4.append(activity[0, 39])
         act_ids.append(activity_id)
     return zip(c1, c2, c3, c4, act_ids)
@@ -125,13 +124,13 @@ def predict_activities():
         label = rides_clusterer.predict(pred_arr)[0]
         rides = top_k_labels(item_similarity_rides, rides_mapper, label)
         rides = sort_activities(rides, city_latlng, co_rides_df)
-        return render_template('results.html', data=get_activity_data(rides, co_rides_df)) # get activity data uses dataframe. would like to use postgres server
+        return render_template('results.html', data=get_activity_data(rides, co_rides_df)) # gets data uses dataframe. would like to use postgres server eventually
     else:
         item_similarity_runs, runs_clusterer, runs_mapper = load_runs()
         label = runs_clusterer.predict(pred_arr)[0]
         runs = top_k_labels(item_similarity_runs, runs_mapper, label)
         runs = sort_activities(runs, city_latlng, co_runs_df)
-        return render_template('results.html', data=get_activity_data(runs, co_runs_df)) # get activity data uses dataframe. would like to use postgres server
+        return render_template('results.html', data=get_activity_data(runs, co_runs_df)) # gets data uses dataframe. would like to use postgres server
 
 @app.route('/results/map/<activity_id>', methods=['GET', 'POST'])
 def go_to_map(activity_id):
