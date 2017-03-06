@@ -54,14 +54,20 @@ def top_k_labels(similarity, mapper, label_idx, k=3):
     return [mapper[x] for x in np.argsort(similarity[label_idx,:])[:-k-1:-1]]
 
 def get_activity_data(activites, df):
-    c1, c2, c3, c4 = [],[],[],[]
+    c1, c2, c3, c4, act_ids = [],[],[],[],[]
     for activity_id in activites[0]:
         activity = df[df['id'] == activity_id].values
         c1.append(activity[0, 1])
         c2.append(activity[0, 2] * 0.000621371)
         c3.append(activity[0, 5] * 3.28084)
         c4.append(activity[0, 39])
-    return zip(c1, c2, c3, c4)
+        act_ids.append(activity_id)
+    return zip(c1, c2, c3, c4, act_ids)
+
+def get_map_data(activity_id, df):
+    map_data = df.ix[df.id == activity_id, [-8, -7, -6]].values[0]
+    return {'sum_poly': map_data[0], 'lat': map_data[1], 'lng': map_data[2]}
+
 
 # Home page with options to predict rides or runs
 @app.route('/', methods=['GET'])
@@ -105,6 +111,7 @@ def predict_activities():
         item_similarity_rides, rides_clusterer, rides_mapper = load_rides()
         label = rides_clusterer.predict(pred_arr)[0]
         rides = top_k_labels(item_similarity_rides, rides_mapper, label)
+
         return render_template('results.html', data=get_activity_data(rides, co_rides_df)) # get activity data uses dataframe. would like to use postgres server
     else:
         item_similarity_runs, runs_clusterer, runs_mapper = load_runs()
@@ -113,9 +120,15 @@ def predict_activities():
         return render_template('results.html', data=get_activity_data(runs, co_runs_df)) # get activity data uses dataframe. would like to use postgres server
 
 
-@app.route('/map', methods=['POST'] )
-def go_to_map():
-    return render_template('map.html')
+@app.route('/results/map/<activity_id>', methods=['GET', 'POST'])
+def go_to_map(activity_id):
+    activity = session['activity']
+    if activity == 'bike':
+        map_data = get_map_data(int(activity_id), co_rides_df)
+        return render_template('map.html', data=map_data)
+    else:
+        map_data = get_map_data(int(activity_id), co_runs_df)
+        return render_template('map.html', data=map_data)
 
 app.secret_key = os.urandom(24)
 if __name__ == '__main__':

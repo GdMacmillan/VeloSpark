@@ -24,7 +24,7 @@
 
 </head>
 
-<body>
+<body onload='initialize({{map_data|tojson}})'>
     <div class='navbar-container'>
         <nav class="navbar">
           <div class="container-fluid">
@@ -52,29 +52,51 @@
         </nav>
     </div>
     <div class='outer-container'>
-        <div class='results-main'>
-            <h1 class='results-title'> Matching Results: </h1>
-            <table>
-                <thead>
-                    <th>activity name</th>
-                    <th>distance (mi)</th>
-                    <th>elevation gain (ft)</th>
-                    <th>nearest city</th>
-                </thead>
-                <tbody>
-                    {% for c1, c2, c3, c4, id in data %}
-                    <tr>
-                        <td>{{ c1 }}</td>
-                        <td>{{ c2 }}</td>
-                        <td>{{ c3 }}</td>
-                        <td>{{ c4 }}</td>
-                        <td><a href="results/map/{{ id }}">Map</a></td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-        </div>
+        <div id="map"></div>
     </div>
 </div>
 </body>
 </html>
+
+<script type="text/javascript" src="http://maps.google.com/maps/api/js?key=AIzaSyAUGvrEnluwbB1FvXQY1ROiFMGX3FpqjV8&libraries=geometry&amp;sensor=false"></script>
+
+<style type="text/css">
+#map {width:670px;height:600px;}
+</style>
+
+<script type='text/javascript'>
+function initialize(map_data) {
+    console.log('hello')
+    console.log(map_data)
+    var myLatlng = new google.maps.LatLng(map_data.lat, map_data.lng);
+    var myOptions = {
+        zoom: 8,
+        center: myLatlng,
+        mapTypeId: google.maps.MapTypeId.ROADMAP
+    }
+    var map = new google.maps.Map(document.getElementById("map"), myOptions);
+
+    var decodedPath = google.maps.geometry.encoding.decodePath(map_data.sum_poly);
+
+    var decodedLevels = decodeLevels("BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB");
+
+    var setRegion = new google.maps.Polyline({
+        path: decodedPath,
+        levels: decodedLevels,
+        strokeColor: "#FF0000",
+        strokeOpacity: 1.0,
+        strokeWeight: 2,
+        map: map
+    });
+}
+
+function decodeLevels(encodedLevelsString) {
+    var decodedLevels = [];
+
+    for (var i = 0; i < encodedLevelsString.length; ++i) {
+        var level = encodedLevelsString.charCodeAt(i) - 63;
+        decodedLevels.push(level);
+    }
+    return decodedLevels;
+}
+</script>
