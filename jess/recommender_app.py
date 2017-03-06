@@ -6,8 +6,6 @@ import numpy as np
 import pandas as pd # also temporary
 from clustering import load_data, get_labels
 import os
-# sys.path.append('../')
-#Initialize app
 
 app = Flask(__name__, static_url_path = "", static_folder = "static")
 
@@ -97,7 +95,7 @@ def get_activity_predictors(activity):
     return render_template('form.html', city_list=city_list, displayed_activity=displayed_activity)
 
 # This displays user inputs froms the form page
-@app.route('/results', methods=['GET', 'POST'] )
+@app.route('/results', methods=['GET', 'POST'])
 def predict_activities():
 
     distance = int(request.form['distance']) * 1609.34 # convert from miles to meters
@@ -118,7 +116,6 @@ def predict_activities():
         label = runs_clusterer.predict(pred_arr)[0]
         runs = top_k_labels(item_similarity_runs, runs_mapper, label)
         return render_template('results.html', data=get_activity_data(runs, co_runs_df)) # get activity data uses dataframe. would like to use postgres server
-
 
 @app.route('/results/map/<activity_id>', methods=['GET', 'POST'])
 def go_to_map(activity_id):
