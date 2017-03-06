@@ -1,10 +1,9 @@
-
-from collections import Counter
 from flask import Flask, request, render_template, session
+from clustering import load_data, get_labels
+from scipy.spatial.distance import cdist
 import cPickle as pickle
 import numpy as np
 import pandas as pd # also temporary
-from clustering import load_data, get_labels
 import os
 
 app = Flask(__name__, static_url_path = "", static_folder = "static")
@@ -45,15 +44,30 @@ def load_rides():
 
 def get_city_lat_lng(city):
     colorado_cities = pd.read_csv('data/colorado_cities.csv')
-    return colorado_cities[colorado_cities.city == city].values[0,2:4]
+    print colorado_cities[colorado_cities.city == city].values[0, 2:4]
+    return colorado_cities[colorado_cities.city == city].values[0, 2:4]
 
-def top_k_labels(similarity, mapper, label_idx, k=3):
-    print similarity.shape
-    return [mapper[x] for x in np.argsort(similarity[label_idx,:])[:-k-1:-1]]
+def top_k_labels(similarity, mapper, label_idx, k=5):
+    # if mapper[label_idx].size == 0:
+    #     return np.concatenate([mapper[x] for x in np.argsort(similarity[label_idx,:])[:-k-1:-1]].append(mapper[label_idx]))
+    # else:
+    return np.concatenate([mapper[x] for x in np.argsort(similarity[label_idx,:])[:-k-1:-1]])
 
-def get_activity_data(activites, df):
+def cos_cdist(matrix, vector):
+    """
+    Compute the cosine distances between each row of matrix and vector.
+    """
+    v = vector.reshape(1, -1)
+    return cdist(matrix, v, 'cosine').reshape(-1)
+
+def sort_activities(activities, city_latlng, df):
+    act_latlngs = np.array([df.loc[df.id == act_id, ['start_lat', 'start_lng']].values[0] for act_id in activities])
+    sorted_activities = activities[np.argsort(cos_cdist(act_latlngs, city_latlng))]
+    return sorted_activities
+
+def get_activity_data(activities, df):
     c1, c2, c3, c4, act_ids = [],[],[],[],[]
-    for activity_id in activites[0]:
+    for activity_id in activities[:10]:
         activity = df[df['id'] == activity_id].values
         c1.append(activity[0, 1])
         c2.append(activity[0, 2] * 0.000621371)
@@ -103,18 +117,20 @@ def predict_activities():
     moving_time = int(request.form['moving_time']) * 3600 # convert hours to seconds
     city = request.form['city']
     activity = session['activity']
-    pred_arr = np.concatenate((np.array([distance, elevation_gain, moving_time]), get_city_lat_lng(city)), axis=0)
+    city_latlng = get_city_lat_lng(city)
+    pred_arr = np.concatenate((np.array([distance, elevation_gain, moving_time]), city_latlng), axis=0)
 
     if activity == 'bike':
         item_similarity_rides, rides_clusterer, rides_mapper = load_rides()
         label = rides_clusterer.predict(pred_arr)[0]
         rides = top_k_labels(item_similarity_rides, rides_mapper, label)
-
+        rides = sort_activities(rides, city_latlng, co_rides_df)
         return render_template('results.html', data=get_activity_data(rides, co_rides_df)) # get activity data uses dataframe. would like to use postgres server
     else:
         item_similarity_runs, runs_clusterer, runs_mapper = load_runs()
         label = runs_clusterer.predict(pred_arr)[0]
         runs = top_k_labels(item_similarity_runs, runs_mapper, label)
+        runs = sort_activities(runs, city_latlng, co_runs_df)
         return render_template('results.html', data=get_activity_data(runs, co_runs_df)) # get activity data uses dataframe. would like to use postgres server
 
 @app.route('/results/map/<activity_id>', methods=['GET', 'POST'])
