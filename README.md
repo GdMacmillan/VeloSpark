@@ -42,4 +42,9 @@ If I had more time and wasn't limited in resources I might try to create a globa
 
 ## <a id="h6"></a> Dependencies
 
+    pip:
+*   reverse_geocoder
+*   stravalib
+
+
 ## <a id="h7"></a> Dependencies

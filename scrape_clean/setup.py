@@ -5,7 +5,6 @@ import numpy as np
 import reverse_geocoder as rg
 import re, stravalib
 
-
 # my user client secrete and access token. Not using access token for some reason. Not sure why I don't need it.
 
 try:
@@ -15,11 +14,11 @@ try:
     strava_password = os.environ['STRAVA_PASSWORD']
 except:
     with open('strava.json') as f:
-	data = json.load(f)
-    client_secret = data["STRAVA_CLIENT_SECRET"]
-    access_token = data["STRAVA_ACCESS_TOKEN"]
-    strava_email = data['STRAVA_EMAIL']
-    strava_password = data['STRAVA_PASSWORD']
+    	data = json.load(f)
+        client_secret = data["STRAVA_CLIENT_SECRET"]
+        access_token = data["STRAVA_ACCESS_TOKEN"]
+        strava_email = data['STRAVA_EMAIL']
+        strava_password = data['STRAVA_PASSWORD']
 
 def write_list_to_csv(my_list, filename):
     """
@@ -171,5 +170,15 @@ def pickle_the_df(df, filename):
 
 if __name__ == '__main__':
     # df.to_csv('path', header=True, index=False, encoding='utf-8') # utility function saves df to csv
-    # my_scraper = Strava_scraper(client_secret, access_token)
+    # my_scraper = Strava_scraper(client_secret, access_token, strava_email, strava_password)
+
+    # ssh -i ~/.ssh/my_key_pair_001.pem ubuntu@34.197.37.134
+    #
+    # scp -i ~/.ssh/my_key_pair_001.pem ubuntu@34.197.37.134:aws/act_df_needs_state_feature_20640.csv .
+    #
+    # ssh -i ~/.ssh/my_key_pair_001.pem ubuntu@52.91.211.58
+    #
+    # scp -i ~/.ssh/my_key_pair_001.pem act_df_needs_state_feature_20640.csv ubuntu@52.91.211.58:aws/
+    #
+    # scp -i ~/.ssh/my_key_pair_001.pem scrape_clean/setup.py ubuntu@52.91.211.58:aws/
     pass

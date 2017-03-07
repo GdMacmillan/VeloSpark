@@ -90,12 +90,11 @@ class Strava_scraper(object):
 		return driver
 
 	def _get_activity_by_id(self, act_id):
+		print act_id
 		try:
 			activity = self.client.get_activity(act_id) # get id with id = act_id from strava client
 			return activity
 		except HTTPError:
-			print "client HTTP error when getting activity {}!!!".format(act_id)
-			return None
 
 	def get_soup(self, driver, url):
 		'''
