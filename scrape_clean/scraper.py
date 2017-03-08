@@ -1,6 +1,5 @@
 from stravalib.client import Client
 from stravalib.util.limiter import RateLimitRule, RateLimiter
-from geopy.geocoders import Nominatim
 from collections import deque
 from bs4 import BeautifulSoup
 from selenium import webdriver
