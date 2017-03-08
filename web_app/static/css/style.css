@@ -58,7 +58,7 @@ body {
     color: white;
 }
 
-.inner-container {
+.button-container {
     position: relative;
     width: 100%;
     float: left;
@@ -83,6 +83,11 @@ body {
     color: #4F5052;
 }
 
+.inner-container p {
+    width: 100%;
+    margin:0 auto;
+
+}
 .main .images {
     width: 100%;
     color: #4F5052;
