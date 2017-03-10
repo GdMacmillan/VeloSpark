@@ -101,6 +101,11 @@ body {
     cursor: pointer;
 }
 
+.activity-title {
+    width: 100%;
+    padding: 20px;
+}
+
 form {
     max-width: 400px;
     margin: 0 auto;

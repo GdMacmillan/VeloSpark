@@ -1,12 +1,18 @@
-# *VEloSpark*
+# *VeloSpark*
 
-### A Strava Ride/Run Recommender
+### A Colorado Ride/Run Recommender
+
+Gordon MacMillan
+
+Galvanize Data Science Immersive - Capstone Project - March 2017
 
 ## Introduction
 
 Strava is a social network for athletes. It allows millions of users to upload there activities and maintains a profile of those activities and any associated achievements, stats, photos, and connections to other athletes.
 
-The VeloSpark app is used to predict rides or runs that a rider/user might enjoy based on their inputs to the web application. The app uses a clustering based approach to label an activity according to it's relative location, total distance and elevation gain. The app then uses collaborative filtering to get recommendations for which activities will most likely correspond with a users input. Future use will allow users to add themselves to the app database and upload their data. This will automatically generate recommendations without the need for manual input.
+I'm a big fan of exercise like cycling and running. I wanted to do something with my newfound knowledge of API's and the wealth of data you can get with the nice one Strava provides.
+
+The VeloSpark app is what I came up with. Users can get recommendations that they might enjoy based on inputs to the web application. The app uses a clustering based approach to label an activity according to it's absolute location, total distance and elevation gain. The app then uses collaborative filtering to get a similarity of the input to other activities. Future use will allow users to connect with their strava account. The restful API will grab their past activities and provide recommendations tailored to their data. I also will incorporate more of the network of activities that locals know and enjoy.
 
 ### Table of Contents
 * [Project Scope](#h1)
@@ -34,11 +40,11 @@ If I had more time and wasn't limited in resources I might try to create a globa
 *  ### Digging In
 
 ## <a id="h4"></a> Model Development
-***this section in progress
+*** this section in progress
 * Use k means to cluster activities in colorado according to geographic start/stop, total elevation gain and distance features. This would give a rough label from which i could get ratings to use in the alternating least squares model.
 * Start off with 50 clusters on smaller dataset. Might need more or to use an alternate method such as DBscan to find better clusters.
 
-## <a id="h5"></a> Web Application
+## <a id="h5"></a> Web Application: [VeloSpark](http://ec2-54-234-99-142.compute-1.amazonaws.com:8080)
 
 ## <a id="h6"></a> Dependencies
 

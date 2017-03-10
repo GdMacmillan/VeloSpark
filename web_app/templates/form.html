@@ -55,11 +55,9 @@
     </nav>
 </div>
 <body>
-    <div class="activity-description">
-        <p>Excellent, let's go {{displayed_activity}}!</p>
-    </div>
     <div class='form-container'>
         <div class='inner-container'>
+            <h1 class='activity-title'>Excellent, let's go {{displayed_activity}}!</h1>
             <form action='/results' method='POST'>
                 <div class="form-group">
                     <label for="distance">How far do you want to go?</label>
@@ -73,9 +71,6 @@
                     <label for="moving_time">If You are constrained for time, what would you like your moving time to be?</label>
                     <input type="number" class="form-control" name='moving_time', placeholder='moving time (hrs)'>
                 </div>
-                <!-- <div id="the-basics">
-                <input type="text" class="typeahead tt-query" autocomplete="off" spellcheck="false">
-            </div> -->
             <div class="form-group">
                 <label for="city">What's the nearest city</label>
                 <select type="text" class="form-control" name='city'>
