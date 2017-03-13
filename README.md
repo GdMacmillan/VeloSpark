@@ -20,7 +20,7 @@ The VeloSpark app is what I came up with. Users can get recommendations that the
 * [Exploratory Data Analysis](#h3)
 * [Development](#h4)
 * [Web Application](#h5)
-* [Dependencies](#h6)
+* [Tools and Dependencies](#h6)
 * [Acknowledgements](#h7)
 
 ## <a id="h1"></a> Project Scope
@@ -113,3 +113,6 @@ The following are the packages I used and can be pip installed:
     reverse_geocoder
     stravalib
     urllib2
+
+## <a id="h7"></a> Acknowledgements
+The data was sourced from Strava so all kudos for the engineering and development team behind their API. Also, the instructors at galvanize for their vast body of knowledge and helpful tips. I also appreciate the beer and coffee provided by galvanize during the late nights of coding.
