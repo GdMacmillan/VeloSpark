@@ -18,7 +18,7 @@ The VeloSpark app is what I came up with. Users can get recommendations that the
 * [Project Scope](#h1)
 * [Feature Engineering](#h2)
 * [Exploratory Data Analysis](#h3)
-* [Model Development](#h4)
+* [Development](#h4)
 * [Web Application](#h5)
 * [Dependencies](#h6)
 * [Acknowledgements](#h7)
