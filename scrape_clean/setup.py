@@ -7,18 +7,18 @@ import re, stravalib
 
 # my user client secrete and access token. Not using access token for some reason. Not sure why I don't need it.
 
-# try:
-#     client_secret = os.environ["STRAVA_CLIENT_SECRET"]
-#     access_token = os.environ["STRAVA_ACCESS_TOKEN"]
-#     strava_email = os.environ['STRAVA_EMAIL']
-#     strava_password = os.environ['STRAVA_PASSWORD']
-# except:
-#     with open('strava.json') as f:
-#     	data = json.load(f)
-#         client_secret = data["STRAVA_CLIENT_SECRET"]
-#         access_token = data["STRAVA_ACCESS_TOKEN"]
-#         strava_email = data['STRAVA_EMAIL']
-#         strava_password = data['STRAVA_PASSWORD']
+try:
+    client_secret = os.environ["STRAVA_CLIENT_SECRET"]
+    access_token = os.environ["STRAVA_ACCESS_TOKEN"]
+    strava_email = os.environ['STRAVA_EMAIL']
+    strava_password = os.environ['STRAVA_PASSWORD']
+except:
+    with open('strava.json') as f:
+    	data = json.load(f)
+        client_secret = data["STRAVA_CLIENT_SECRET"]
+        access_token = data["STRAVA_ACCESS_TOKEN"]
+        strava_email = data['STRAVA_EMAIL']
+        strava_password = data['STRAVA_PASSWORD']
 
 def write_list_to_csv(my_list, filename):
     """

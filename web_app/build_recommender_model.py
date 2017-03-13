@@ -26,7 +26,7 @@ def get_idx_to_activities_dict(df):
     return idx_to_activities
 
 def fast_similarity(ratings, kind='item', epsilon=1e-9):
-    # epsilon -> small number for handling dived-by-zero errors
+    # epsilon -> small number for handling divide-by-zero errors
     if kind == 'user':
         sim = ratings.dot(ratings.T) + epsilon
     elif kind == 'item':
