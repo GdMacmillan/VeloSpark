@@ -27,7 +27,7 @@ The VeloSpark app is what I came up with. Users can get recommendations that the
 
 #### This project sets out to accomplish two things:
 *   Provide users recommendations for rides or runs to do in the state of Colorado.
-*   Create a nice stable interface for viewing those recommendations
+*   Create a nice stable interface for viewing those recommendations.
 
 Future work might expand the areas for which recommendations are provided. It also may include a way for users to authenticate their Strava account and have recommendations provided based on their activity history.
 
@@ -115,4 +115,4 @@ The following are the packages I used and can be pip installed:
     urllib2
 
 ## <a id="h7"></a> Acknowledgements
-The data was sourced from Strava so all kudos for the engineering and development team behind their API. Also, the instructors at galvanize for their vast body of knowledge and helpful tips. I also appreciate the beer and coffee provided by galvanize during the late nights of coding.
+The data was sourced from Strava so all kudos for the engineering and development team behind their API. Also, the instructors at Galvanize for their vast body of knowledge and helpful tips.
