@@ -13,7 +13,7 @@ try:
     strava_email = os.environ['STRAVA_EMAIL']
     strava_password = os.environ['STRAVA_PASSWORD']
 except:
-    with open('strava.json') as f:
+    with open('aws/strava.json') as f:
     	data = json.load(f)
         client_secret = data["STRAVA_CLIENT_SECRET"]
         access_token = data["STRAVA_ACCESS_TOKEN"]
