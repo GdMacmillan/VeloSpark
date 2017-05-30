@@ -1,1 +1,1 @@
-web: gunicorn velosparkapp.velosparkapp.wsgi
+web: gunicorn --pythonpath velosparkapp velosparkapp.wsgi
