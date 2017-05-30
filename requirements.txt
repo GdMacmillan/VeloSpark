@@ -1,6 +1,7 @@
 appdirs==1.4.3
 certifi==2017.4.17
 chardet==3.0.3
+dj-database-url==0.4.2
 Django==1.11.1
 django-all-access==0.9.0
 django-appconf==1.0.2
@@ -8,10 +9,12 @@ django-bootstrap3==8.2.3
 django-compressor==2.1.1
 django-filter==1.0.4
 djangorestframework==3.6.3
+gunicorn==19.7.1
 idna==2.5
 Markdown==2.6.8
 oauthlib==2.0.2
 packaging==16.8
+psycopg2==2.7.1
 pycrypto==2.6.1
 pyparsing==2.2.0
 pyspark==2.1.0+hadoop2.7
@@ -22,3 +25,4 @@ requests-oauthlib==0.8.0
 rjsmin==1.0.12
 six==1.10.0
 urllib3==1.21.1
+whitenoise==3.3.0
