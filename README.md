@@ -1,4 +1,5 @@
-# *VeloSpark*
+# *FindingEpics*
+## (codename VeloSpark)
 
 ### A Colorado Ride/Run Recommender
 
