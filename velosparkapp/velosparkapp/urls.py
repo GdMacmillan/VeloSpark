@@ -1,8 +1,10 @@
 from django.conf.urls import url
+from django.contrib import admin
 
 from .views import page
 
 urlpatterns = (
+    url(r'^admin/', admin.site.urls),
     url(r'^(?P<slug>[\w./-]+)/$', page, name='page'),
     url(r'^$', page, name='homepage'),
 )

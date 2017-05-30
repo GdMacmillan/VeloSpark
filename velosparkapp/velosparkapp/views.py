@@ -28,7 +28,6 @@ def get_page_or_404(name):
     page._meta = meta
     return page
 
-
 def page(request, slug='index'):
     """Render the requested page if found."""
     file_name = '{}.html'.format(slug)
