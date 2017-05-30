@@ -1,2 +1,8 @@
 aws
 not_used
+old_web_app
+.ipynb_checkpoints
+metastore_db
+*.pyc
+env
+static
