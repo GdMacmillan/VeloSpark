@@ -1,9 +1,9 @@
 import os
 import sys
 
-from django.conf import settings
-
-BASE_DIR = os.path.dirname(__file__)
+# from django.conf import settings
+#
+# BASE_DIR = os.path.dirname(__file__)
 
 
 # settings.configure(
