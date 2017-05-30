@@ -1,1 +1,1 @@
-web: gunicorn app:velosparkapp/app
+web: gunicorn velosparkapp.velosparkapp.wsgi
