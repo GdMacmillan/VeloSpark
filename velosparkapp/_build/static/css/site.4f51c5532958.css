@@ -1,0 +1,10 @@
+body {
+        padding: 50px 0 30px;
+}
+
+a.navbar-brand {
+    color: #FC4C02;
+    text-shadow: none;
+    font-weight: bold;
+    font-size: 32px;
+}

@@ -5,4 +5,3 @@ old_web_app
 metastore_db
 *.pyc
 env
-static
