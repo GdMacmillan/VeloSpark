@@ -44,8 +44,21 @@ INSTALLED_APPS = [
     'rest_framework.authtoken',
     # Internal apps
     'velosparkapp',
+    'data_layer',
     'compressor',
+    'allaccess',
 ]
+
+AUTHENTICATION_BACKENDS = [
+    # Default Backend
+    'django.contrib.auth.backends.ModelBackend',
+    # Additional Backend
+    'allaccess.backends.AuthorizedServiceBackend'
+]
+
+LOGIN_URL = '/'
+
+LOGIN_REDIRECT_URL = '/'
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
@@ -71,6 +84,7 @@ TEMPLATES = [
                 'django.template.context_processors.request',
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
+                'allaccess.context_processors.available_providers',
             ],
             'debug': DEBUG,
         },

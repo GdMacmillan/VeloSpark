@@ -1,0 +1,12 @@
+{% load static %}
+<div>
+    <div>
+        <div class='profile-photo'>
+            <img src="{{ info.profile }}" class="img-rounded" alt="Data Wrangling Badass" width="400" height="400">
+        </div>
+        <li>
+            <a href='https://www.strava.com/athletes/{{ info.id }}'><img src="{% static "images/strava-white-5f38af0beeb212284be95b10bb8544b4.svg" %}">
+            </a>
+        </li>
+    </div>
+</div>

@@ -7,7 +7,7 @@
     <meta name="viewport" content="width=device-width,initial-scale=1">
     <meta name="description" content="{{ description|default:'Default prototype description' }}">
     <meta name="keywords" content="{{ keywords|default:'prototype' }}">
-    <title>{% block title %}Rapid Prototypes{% endblock %}</title>
+    <title>{% block title %}FindingEpics{% endblock %}</title>
     {% compress css %}
     <link rel="stylesheet" href="{% static 'css/bootstrap.min.css' %}">
     <link rel="stylesheet" href="{% static 'css/site.css' %}">
@@ -24,24 +24,40 @@
                     <span class="icon-bar"></span>
                     <span class="icon-bar"></span>
                 </button>
-                <a class="navbar-brand" href="/">VeloSpark</a>
+                <a class="navbar-brand" href="/">FindingEpics</a>
             </div>
             <div class="collapse navbar-collapse">
                 <ul class="nav navbar-nav">
-                    <li {% if slug == 'index' %}class="active"{% endif %}>
+                    <!-- <li {% if slug == 'index' %}class="active"{% endif %}>
                         <a href="/">Home</a>
-                    </li>
+                    </li> -->
                     <li {% if slug == 'pricing' %}class="active"{% endif %}>
                         <a href="{% url 'page' 'pricing' %}">Pricing</a>
                     </li>
                     <li {% if slug == 'contact' %}class="active"{% endif %}>
                         <a href="{% url 'page' 'contact' %}">Contact</a>
                     </li>
+                    <li {% if slug == 'test' %}class="active"{% endif %}>
+                        <a href="{% url 'page' 'test' %}">Test</a>
+                    </li>
                 </ul>
                 <ul class="nav navbar-nav navbar-right">
-                    <li {% if slug == 'login' %}class="active"{% endif %}>
-                        <a href="{% url 'page' 'login' %}">Connect With Strava</a>
-                    </li>
+                    {% if user.is_authenticated %}
+                        <li {% if slug == 'logout' %}class="active"{% endif %}>
+                            <a href="{% url 'page' 'logout' %}">Logout</a>
+                        </li>
+                        <li {% if slug == 'profile' %}class="active"{% endif %}>
+                            <a href="{% url 'page' 'profile' %}">
+                                <span class="glyphicon glyphicon-user"></span>
+                            </a>
+                        </li>
+                    {% else %}
+                        <li class="active">
+                            <a class="nav_connect_strava" href="{% url 'allaccess-login' 'strava' %}">
+                                <img src="{% static "images/nav_connect_strava.png" %}" alt="Connect With Strava"/>
+                            </a>
+                        </li>
+                    {% endif %}
                 </ul>
             </div>
         </div>

@@ -1,13 +1,13 @@
 ----------------------------------------------------------------
-Sun Apr 23 07:29:09 MDT 2017:
-Booting Derby version The Apache Software Foundation - Apache Derby - 10.12.1.1 - (1704137): instance a816c00e-015b-9b00-72e8-00000b6ced00 
-on database directory /Users/gmacmillan/immersive/projects/VeloSpark/notebooks/metastore_db with class loader org.apache.spark.sql.hive.client.IsolatedClientLoader$$anon$1@7f4d9c3f 
-Loaded from file:/usr/local/Cellar/apache-spark/2.1.0/libexec/jars/derby-10.12.1.1.jar
+Thu Jun 08 15:47:22 MDT 2017:
+Booting Derby version The Apache Software Foundation - Apache Derby - 10.12.1.1 - (1704137): instance a816c00e-015c-89ad-18e8-00000b96f698 
+on database directory /Users/gmacmillan/immersive/projects/VeloSpark/notebooks/metastore_db with class loader org.apache.spark.sql.hive.client.IsolatedClientLoader$$anon$1@32cd7e11 
+Loaded from file:/usr/local/Cellar/apache-spark/2.1.1/libexec/jars/derby-10.12.1.1.jar
 java.vendor=Oracle Corporation
 java.runtime.version=1.8.0_112-b16
 user.dir=/Users/gmacmillan/immersive/projects/VeloSpark/notebooks
 os.name=Mac OS X
 os.arch=x86_64
-os.version=10.12.4
+os.version=10.12.5
 derby.system.home=null
 Database Class Loader started - derby.database.classpath=''

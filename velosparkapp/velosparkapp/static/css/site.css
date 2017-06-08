@@ -8,3 +8,8 @@ a.navbar-brand {
     font-weight: bold;
     font-size: 32px;
 }
+
+a.nav_connect_strava img{
+    width: 150px;
+    height: auto;
+}
