@@ -1,9 +1,14 @@
+{% load static %}
 <div class="jumbotron">
     <div class="container">
-        <h1>Get Your Recommended Activities</h1>
-        <p>
-            placeholder
-        </p>
+        <div class="text">
+            <h1>GRIT</h1>
+            <h1>SWEAT</h1>
+            <h1>DATA...</h1>
+            <p>
+                placeholder
+            </p>
+        </div>
     </div>
 </div>
 <div class="container">
@@ -16,14 +21,21 @@
 </div>
 <hr>
 
-<footer>
-    <div class="container">
-        <p>&copy; Your Company {% now 'Y' %}</p>
-        <p>
-            <a class="btn btn-default"
-            href="{% url 'page' 'contact' %}" role="button">
-            Contact us »
-        </a>
-    </p>
+<footer class="homepage-footer">
+    <div class="container-fluid">
+        <div class="row">
+            <div class="col-lg-6">
+                <p>&copy; Your Company {% now 'Y' %}</p>
+                <p>
+                    <a class="btn btn-default"
+                    href="{% url 'page' 'contact' %}" role="button">
+                    Contact us »
+                    </a>
+                </p>
+            </div>
+            <div class="col-lg-6 pull-right">
+                <img class="col-md-4 pull-right" height="50px" width="auto" src="{% static "images/api_logo_pwrdBy_strava_stack_light.png" %}" alt="Powered By Strava"/>
+            </div>
+        </div>
     </div>
 </footer>

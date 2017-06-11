@@ -44,7 +44,7 @@ INSTALLED_APPS = [
     'rest_framework.authtoken',
     # Internal apps
     'velosparkapp',
-    'data_layer',
+    'api',
     'compressor',
     'allaccess',
 ]
@@ -55,6 +55,8 @@ AUTHENTICATION_BACKENDS = [
     # Additional Backend
     'allaccess.backends.AuthorizedServiceBackend'
 ]
+
+AUTH_USER_MODEL = 'api.StravaUser'
 
 LOGIN_URL = '/'
 

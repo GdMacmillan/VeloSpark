@@ -1,6 +1,11 @@
+from django.conf import settings
 from django.db import models
 from django.contrib.postgres.fields import JSONField
+from django.contrib.auth.models import AbstractUser
 
+
+class StravaUser(AbstractUser):
+    pass
 
 class Athlete(models.Model):
     """
@@ -35,6 +40,7 @@ class Athlete(models.Model):
     clubs = JSONField()
     bikes = JSONField()
     shoes = JSONField()
+    user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
 
     def __str__(self):
         return "Athlete: {1} {2}".format(self.firstname, self.lastname)

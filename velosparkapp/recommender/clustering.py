@@ -5,6 +5,16 @@ import numpy as np
 import polyline
 import uuid
 
+import time
+from contextlib import contextmanager
+
+@contextmanager
+def measureTime(title):
+    t1 = time.time()
+    yield
+    t2 = time.time()
+    print '%s: %0.2f seconds elapsed' % (title, t2-t1)
+
 class PolyClusterer(ClusterMixin):
     """
     A clustering tool to group activities by start and end latitude and longitude and then further by their polyline.
@@ -48,6 +58,8 @@ class PolyClusterer(ClusterMixin):
         lats = X.start_lat.values # array of start latitudes
         lngs = X.start_lng.values # array of end latitudes
 
+
+        #block of code to time here
         dsts = [] # empty distance array
         # populate distance array
         for (lt, lg) in izip(lats, lngs):
@@ -67,6 +79,7 @@ class PolyClusterer(ClusterMixin):
                 dist = self.conditional_dist(poly1, poly2)
                 if dist is not None and dist < self.polyline_threshold: # if distance between polylines is not None, add to list
                     subset_pairs.append([idx1, idx2])
+
 
         if predict:
             X['activity_id'] = 0 # set column named activity_id values to placeholder
@@ -91,6 +104,7 @@ class PolyClusterer(ClusterMixin):
                 else:
                     activity_id = X.loc[mask_arr, 'activity_id'].dropna().values[0]
                     X.loc[mask_arr, ['activity_id']] = activity_id
+
 
         # set all remaining activities without a cluster assignment to a new a activity key
 
@@ -124,6 +138,7 @@ class PolyClusterer(ClusterMixin):
         assert (X['end_lat'].isnull().sum() == 0), "all activities must have end_lat"
         assert (X['end_lng'].isnull().sum() == 0), "all activities must have end_lng"
 
+        n_samples = X.shape[0]
         self._build_clusters(X)
 
     def predict(self, X, y=None):

@@ -1,5 +1,10 @@
+
+html {
+    color:
+}
+
 body {
-        padding: 50px 0 30px;
+    padding: 50px 0 30px;
 }
 
 a.navbar-brand {
@@ -12,4 +17,25 @@ a.navbar-brand {
 a.nav_connect_strava img{
     width: 150px;
     height: auto;
+}
+
+div.jumbotron {
+    background: url('../images/riding_sunset_photo.jpg') no-repeat center center;
+    height: 700px;
+    min-height: 100%;
+    background-size: cover;
+    font-family: 'Cinzel', serif;
+    color: #01AF9E;
+}
+
+div.jumbotron {
+    padding: 50px 0 30px;
+}
+footer.homepage-footer row{
+    width: 100px;
+}
+
+.img-responsive {
+    margin: 0 auto;
+    width: 200%;
 }

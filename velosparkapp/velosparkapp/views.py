@@ -8,6 +8,11 @@ from django.template import Template, Context
 from django.template.loader_tags import BlockNode
 from django.utils._os import safe_join
 
+from allaccess.views import OAuthCallback
+
+
+
+
 def get_page_or_404(name):
     """Return page content as a Django template or raise 404 error."""
     try:
@@ -41,6 +46,7 @@ def page(request, slug='index'):
     	extra_context = json.loads(meta)
     	context.update(extra_context)
 
+
     if request.user.is_authenticated():
         try:
             access = request.user.accountaccess_set.all()[0]
@@ -49,5 +55,6 @@ def page(request, slug='index'):
         else:
             client = access.api_client
             context['info'] = client.get_profile_info(raw_token=access.access_token)
+
 
     return render(request, 'page.html', context)
