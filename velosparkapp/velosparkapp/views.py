@@ -10,7 +10,8 @@ from django.utils._os import safe_join
 
 from allaccess.views import OAuthCallback
 
-
+from api.models import Athlete
+from api.models import StravaUser
 
 
 def get_page_or_404(name):
@@ -46,7 +47,6 @@ def page(request, slug='index'):
     	extra_context = json.loads(meta)
     	context.update(extra_context)
 
-
     if request.user.is_authenticated():
         try:
             access = request.user.accountaccess_set.all()[0]
@@ -54,7 +54,45 @@ def page(request, slug='index'):
             access = None
         else:
             client = access.api_client
-            context['info'] = client.get_profile_info(raw_token=access.access_token)
 
+            context['info'] = client.get_profile_info(raw_token=access.access_token)
+            # context['username'] = context['info']['username']
+            # athlete = Athlete()
+            profile_info = client.get_profile_info(raw_token=access.access_token)
+            strava_user_id = getattr(request.user, 'id')
+            strava_user = StravaUser.objects.get(pk=strava_user_id)
+            # athlete = model(**strava_user.cleaned_data)
+
+            athlete = None
+            try:
+                athlete = Athlete.objects.get(id=profile_info['id'])
+            except Athlete.DoesNotExist:
+                athlete = Athlete(id=profile_info['id'])
+                athlete.user = StravaUser.objects.get(pk=strava_user_id)
+
+            athlete.deserialize(profile_info)
+
+            athlete.save()
+
+            # athlete.user = strava_user
+            # athlete.firstname = profile_info['firstname']
+            # athlete.lastname = profile_info['lastname']
+            # athlete.resource_state = profile_info['resource_state']
+
+
+
+            # context['firstname'] = profile_info['firstname']
+            # strava_user.firstname = profile_info['firstname']
+            # strava_user.save()
+            # athlete = Athlete.objects.get(pk=getattr(request.user, 'id'))
+            # athlete.firstname =
+            # athlete.save()
+
+        # TODO: need to step get list of activities and put them in to database if they are not already there the following shows how to get one page of data from strava api:
+
+        # if slug == 'test':
+        #     params = {'page': 0}
+        #     url = 'https://www.strava.com/api/v3/athlete/activities'
+            # context['test'] = client.request('get', url, params=params)
 
     return render(request, 'page.html', context)

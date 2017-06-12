@@ -2,6 +2,7 @@ from django.conf import settings
 from django.db import models
 from django.contrib.postgres.fields import JSONField
 from django.contrib.auth.models import AbstractUser
+from django.utils import timezone
 
 
 class StravaUser(AbstractUser):
@@ -12,38 +13,44 @@ class Athlete(models.Model):
     Model of athlete data. This contains essential fields and behaviors of the athlete data we are storing from the Strava API.
     """
     id = models.IntegerField(primary_key=True)
-    resource_state = models.PositiveSmallIntegerField()
-    firstname = models.CharField(max_length=140)
-    lastname = models.CharField(max_length=140)
-    profile_medium = models.SlugField()
-    profile = models.SlugField()
-    city = models.CharField(max_length=140)
-    state = models.CharField(max_length=140)
-    country = models.CharField(max_length=140)
-    sex = models.CharField(max_length=10)
-    friend = models.CharField(max_length=10) # This should always be null
-    follower = models.CharField(max_length=10) # This should always be null
-    premium = models.BooleanField()
-    created_at = models.DateTimeField()
-    updated_at = models.DateTimeField
+    resource_state = models.PositiveSmallIntegerField(blank=True)
+    firstname = models.CharField(blank=True, max_length=140)
+    lastname = models.CharField(blank=True, max_length=140)
+    profile_medium = models.SlugField(blank=True)
+    profile = models.SlugField(blank=True)
+    city = models.CharField(blank=True, max_length=140)
+    state = models.CharField(blank=True, max_length=140)
+    country = models.CharField(blank=True, max_length=140)
+    sex = models.CharField(blank=True, max_length=10)
+    friend = models.CharField(blank=True, max_length=10) # This should always be null
+    follower = models.CharField(blank=True, max_length=10) # This should always be null
+    premium = models.BooleanField(default=False, blank=True)
+    created_at = models.DateTimeField(default=timezone.now, blank=True)
+    # updated_at = models.DateTimeField(default=timezone.now, blank=True)
 
     # detailed athlete data model fields
-    follower_count = models.PositiveSmallIntegerField()
-    friend_count = models.PositiveSmallIntegerField()
-    mutual_friend_count = models.PositiveSmallIntegerField()
-    athlete_type = models.PositiveSmallIntegerField() # athlete's default sport type: 0=cyclist, 1=runner
-    date_preference = models.CharField(max_length=140)
-    measurement_preference = models.CharField(max_length=10)
-    email = models.CharField(max_length=140)
-    ftp = models.PositiveSmallIntegerField()
-    weight = models.FloatField()
-    clubs = JSONField()
-    bikes = JSONField()
-    shoes = JSONField()
+    follower_count = models.PositiveSmallIntegerField(blank=True, default=0)
+    friend_count = models.PositiveSmallIntegerField(blank=True, default=0)
+    mutual_friend_count = models.PositiveSmallIntegerField(blank=True, default=0)
+    athlete_type = models.PositiveSmallIntegerField(blank=True, default=0) # athlete's default sport type: 0=cyclist, 1=runner
+    date_preference = models.CharField(blank=True, max_length=140)
+    measurement_preference = models.CharField(blank=True, max_length=10)
+    email = models.CharField(blank=True, max_length=140)
+    ftp = models.PositiveSmallIntegerField(blank=True, default=0)
+    weight = models.FloatField(blank=True, default=0)
+    clubs = JSONField(blank=True, default="{}")
+    bikes = JSONField(blank=True, default="{}")
+    shoes = JSONField(blank=True, default="{}")
     user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
 
     def __str__(self):
-        return "Athlete: {1} {2}".format(self.firstname, self.lastname)
+        return "Athlete: {0} {1}".format(self.firstname, self.lastname)
+
+    def deserialize(self, profile_info):
+        self.firstname = profile_info['firstname']
+        self.lastname = profile_info['lastname']
+        self.resource_state = profile_info['resource_state']
+        self.city = profile_info['city']
 
 
 class Map(models.Model):
