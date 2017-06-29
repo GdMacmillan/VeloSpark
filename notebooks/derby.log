@@ -1,5 +1,5 @@
-Sat Jun 10 09:29:26 MDT 2017 Thread[Thread-2,5,main] Cleanup action starting
-java.sql.SQLException: Failed to start database 'metastore_db' with class loader org.apache.spark.sql.hive.client.IsolatedClientLoader$$anon$1@2e5af5c1, see the next exception for details.
+Mon Jun 26 16:51:50 MDT 2017 Thread[Thread-2,5,main] Cleanup action starting
+java.sql.SQLException: Failed to start database 'metastore_db' with class loader org.apache.spark.sql.hive.client.IsolatedClientLoader$$anon$1@2b8f80ba, see the next exception for details.
 	at org.apache.derby.impl.jdbc.SQLExceptionFactory.getSQLException(Unknown Source)
 	at org.apache.derby.impl.jdbc.SQLExceptionFactory.getSQLException(Unknown Source)
 	at org.apache.derby.impl.jdbc.Util.seeNextException(Unknown Source)
@@ -111,7 +111,7 @@ java.sql.SQLException: Failed to start database 'metastore_db' with class loader
 	at py4j.commands.CallCommand.execute(CallCommand.java:79)
 	at py4j.GatewayConnection.run(GatewayConnection.java:214)
 	at java.lang.Thread.run(Thread.java:745)
-Caused by: ERROR XJ040: Failed to start database 'metastore_db' with class loader org.apache.spark.sql.hive.client.IsolatedClientLoader$$anon$1@2e5af5c1, see the next exception for details.
+Caused by: ERROR XJ040: Failed to start database 'metastore_db' with class loader org.apache.spark.sql.hive.client.IsolatedClientLoader$$anon$1@2b8f80ba, see the next exception for details.
 	at org.apache.derby.iapi.error.StandardException.newException(Unknown Source)
 	at org.apache.derby.impl.jdbc.SQLExceptionFactory.wrapArgsForTransportAcrossDRDA(Unknown Source)
 	... 111 more
@@ -482,8 +482,8 @@ ERROR XSDB6: Another instance of Derby may have already booted the database /Use
 	at java.lang.Thread.run(Thread.java:745)
 ============= end nested exception, level (2) ===========
 Cleanup action completed
-Sat Jun 10 09:29:26 MDT 2017 Thread[Thread-2,5,main] Cleanup action starting
-java.sql.SQLException: Failed to start database 'metastore_db' with class loader org.apache.spark.sql.hive.client.IsolatedClientLoader$$anon$1@2e5af5c1, see the next exception for details.
+Mon Jun 26 16:51:50 MDT 2017 Thread[Thread-2,5,main] Cleanup action starting
+java.sql.SQLException: Failed to start database 'metastore_db' with class loader org.apache.spark.sql.hive.client.IsolatedClientLoader$$anon$1@2b8f80ba, see the next exception for details.
 	at org.apache.derby.impl.jdbc.SQLExceptionFactory.getSQLException(Unknown Source)
 	at org.apache.derby.impl.jdbc.SQLExceptionFactory.getSQLException(Unknown Source)
 	at org.apache.derby.impl.jdbc.Util.seeNextException(Unknown Source)
@@ -595,7 +595,7 @@ java.sql.SQLException: Failed to start database 'metastore_db' with class loader
 	at py4j.commands.CallCommand.execute(CallCommand.java:79)
 	at py4j.GatewayConnection.run(GatewayConnection.java:214)
 	at java.lang.Thread.run(Thread.java:745)
-Caused by: ERROR XJ040: Failed to start database 'metastore_db' with class loader org.apache.spark.sql.hive.client.IsolatedClientLoader$$anon$1@2e5af5c1, see the next exception for details.
+Caused by: ERROR XJ040: Failed to start database 'metastore_db' with class loader org.apache.spark.sql.hive.client.IsolatedClientLoader$$anon$1@2b8f80ba, see the next exception for details.
 	at org.apache.derby.iapi.error.StandardException.newException(Unknown Source)
 	at org.apache.derby.impl.jdbc.SQLExceptionFactory.wrapArgsForTransportAcrossDRDA(Unknown Source)
 	... 111 more
@@ -966,8 +966,8 @@ ERROR XSDB6: Another instance of Derby may have already booted the database /Use
 	at java.lang.Thread.run(Thread.java:745)
 ============= end nested exception, level (2) ===========
 Cleanup action completed
-Sat Jun 10 09:29:26 MDT 2017 Thread[Thread-2,5,main] Cleanup action starting
-java.sql.SQLException: Failed to start database 'metastore_db' with class loader org.apache.spark.sql.hive.client.IsolatedClientLoader$$anon$1@2e5af5c1, see the next exception for details.
+Mon Jun 26 16:51:50 MDT 2017 Thread[Thread-2,5,main] Cleanup action starting
+java.sql.SQLException: Failed to start database 'metastore_db' with class loader org.apache.spark.sql.hive.client.IsolatedClientLoader$$anon$1@2b8f80ba, see the next exception for details.
 	at org.apache.derby.impl.jdbc.SQLExceptionFactory.getSQLException(Unknown Source)
 	at org.apache.derby.impl.jdbc.SQLExceptionFactory.getSQLException(Unknown Source)
 	at org.apache.derby.impl.jdbc.Util.seeNextException(Unknown Source)
@@ -1079,7 +1079,7 @@ java.sql.SQLException: Failed to start database 'metastore_db' with class loader
 	at py4j.commands.CallCommand.execute(CallCommand.java:79)
 	at py4j.GatewayConnection.run(GatewayConnection.java:214)
 	at java.lang.Thread.run(Thread.java:745)
-Caused by: ERROR XJ040: Failed to start database 'metastore_db' with class loader org.apache.spark.sql.hive.client.IsolatedClientLoader$$anon$1@2e5af5c1, see the next exception for details.
+Caused by: ERROR XJ040: Failed to start database 'metastore_db' with class loader org.apache.spark.sql.hive.client.IsolatedClientLoader$$anon$1@2b8f80ba, see the next exception for details.
 	at org.apache.derby.iapi.error.StandardException.newException(Unknown Source)
 	at org.apache.derby.impl.jdbc.SQLExceptionFactory.wrapArgsForTransportAcrossDRDA(Unknown Source)
 	... 111 more
@@ -1450,8 +1450,8 @@ ERROR XSDB6: Another instance of Derby may have already booted the database /Use
 	at java.lang.Thread.run(Thread.java:745)
 ============= end nested exception, level (2) ===========
 Cleanup action completed
-Sat Jun 10 09:29:26 MDT 2017 Thread[Thread-2,5,main] Cleanup action starting
-java.sql.SQLException: Failed to start database 'metastore_db' with class loader org.apache.spark.sql.hive.client.IsolatedClientLoader$$anon$1@2e5af5c1, see the next exception for details.
+Mon Jun 26 16:51:50 MDT 2017 Thread[Thread-2,5,main] Cleanup action starting
+java.sql.SQLException: Failed to start database 'metastore_db' with class loader org.apache.spark.sql.hive.client.IsolatedClientLoader$$anon$1@2b8f80ba, see the next exception for details.
 	at org.apache.derby.impl.jdbc.SQLExceptionFactory.getSQLException(Unknown Source)
 	at org.apache.derby.impl.jdbc.SQLExceptionFactory.getSQLException(Unknown Source)
 	at org.apache.derby.impl.jdbc.Util.seeNextException(Unknown Source)
@@ -1563,7 +1563,7 @@ java.sql.SQLException: Failed to start database 'metastore_db' with class loader
 	at py4j.commands.CallCommand.execute(CallCommand.java:79)
 	at py4j.GatewayConnection.run(GatewayConnection.java:214)
 	at java.lang.Thread.run(Thread.java:745)
-Caused by: ERROR XJ040: Failed to start database 'metastore_db' with class loader org.apache.spark.sql.hive.client.IsolatedClientLoader$$anon$1@2e5af5c1, see the next exception for details.
+Caused by: ERROR XJ040: Failed to start database 'metastore_db' with class loader org.apache.spark.sql.hive.client.IsolatedClientLoader$$anon$1@2b8f80ba, see the next exception for details.
 	at org.apache.derby.iapi.error.StandardException.newException(Unknown Source)
 	at org.apache.derby.impl.jdbc.SQLExceptionFactory.wrapArgsForTransportAcrossDRDA(Unknown Source)
 	... 111 more
@@ -1934,8 +1934,8 @@ ERROR XSDB6: Another instance of Derby may have already booted the database /Use
 	at java.lang.Thread.run(Thread.java:745)
 ============= end nested exception, level (2) ===========
 Cleanup action completed
-Sat Jun 10 09:29:26 MDT 2017 Thread[Thread-2,5,main] Cleanup action starting
-java.sql.SQLException: Failed to start database 'metastore_db' with class loader org.apache.spark.sql.hive.client.IsolatedClientLoader$$anon$1@2e5af5c1, see the next exception for details.
+Mon Jun 26 16:51:51 MDT 2017 Thread[Thread-2,5,main] Cleanup action starting
+java.sql.SQLException: Failed to start database 'metastore_db' with class loader org.apache.spark.sql.hive.client.IsolatedClientLoader$$anon$1@2b8f80ba, see the next exception for details.
 	at org.apache.derby.impl.jdbc.SQLExceptionFactory.getSQLException(Unknown Source)
 	at org.apache.derby.impl.jdbc.SQLExceptionFactory.getSQLException(Unknown Source)
 	at org.apache.derby.impl.jdbc.Util.seeNextException(Unknown Source)
@@ -2044,7 +2044,7 @@ java.sql.SQLException: Failed to start database 'metastore_db' with class loader
 	at py4j.commands.CallCommand.execute(CallCommand.java:79)
 	at py4j.GatewayConnection.run(GatewayConnection.java:214)
 	at java.lang.Thread.run(Thread.java:745)
-Caused by: ERROR XJ040: Failed to start database 'metastore_db' with class loader org.apache.spark.sql.hive.client.IsolatedClientLoader$$anon$1@2e5af5c1, see the next exception for details.
+Caused by: ERROR XJ040: Failed to start database 'metastore_db' with class loader org.apache.spark.sql.hive.client.IsolatedClientLoader$$anon$1@2b8f80ba, see the next exception for details.
 	at org.apache.derby.iapi.error.StandardException.newException(Unknown Source)
 	at org.apache.derby.impl.jdbc.SQLExceptionFactory.wrapArgsForTransportAcrossDRDA(Unknown Source)
 	... 108 more
@@ -2409,8 +2409,8 @@ ERROR XSDB6: Another instance of Derby may have already booted the database /Use
 	at java.lang.Thread.run(Thread.java:745)
 ============= end nested exception, level (2) ===========
 Cleanup action completed
-Sat Jun 10 09:29:26 MDT 2017 Thread[Thread-2,5,main] Cleanup action starting
-java.sql.SQLException: Failed to start database 'metastore_db' with class loader org.apache.spark.sql.hive.client.IsolatedClientLoader$$anon$1@2e5af5c1, see the next exception for details.
+Mon Jun 26 16:51:51 MDT 2017 Thread[Thread-2,5,main] Cleanup action starting
+java.sql.SQLException: Failed to start database 'metastore_db' with class loader org.apache.spark.sql.hive.client.IsolatedClientLoader$$anon$1@2b8f80ba, see the next exception for details.
 	at org.apache.derby.impl.jdbc.SQLExceptionFactory.getSQLException(Unknown Source)
 	at org.apache.derby.impl.jdbc.SQLExceptionFactory.getSQLException(Unknown Source)
 	at org.apache.derby.impl.jdbc.Util.seeNextException(Unknown Source)
@@ -2519,7 +2519,7 @@ java.sql.SQLException: Failed to start database 'metastore_db' with class loader
 	at py4j.commands.CallCommand.execute(CallCommand.java:79)
 	at py4j.GatewayConnection.run(GatewayConnection.java:214)
 	at java.lang.Thread.run(Thread.java:745)
-Caused by: ERROR XJ040: Failed to start database 'metastore_db' with class loader org.apache.spark.sql.hive.client.IsolatedClientLoader$$anon$1@2e5af5c1, see the next exception for details.
+Caused by: ERROR XJ040: Failed to start database 'metastore_db' with class loader org.apache.spark.sql.hive.client.IsolatedClientLoader$$anon$1@2b8f80ba, see the next exception for details.
 	at org.apache.derby.iapi.error.StandardException.newException(Unknown Source)
 	at org.apache.derby.impl.jdbc.SQLExceptionFactory.wrapArgsForTransportAcrossDRDA(Unknown Source)
 	... 108 more
@@ -2884,8 +2884,8 @@ ERROR XSDB6: Another instance of Derby may have already booted the database /Use
 	at java.lang.Thread.run(Thread.java:745)
 ============= end nested exception, level (2) ===========
 Cleanup action completed
-Sat Jun 10 09:29:26 MDT 2017 Thread[Thread-2,5,main] Cleanup action starting
-java.sql.SQLException: Failed to start database 'metastore_db' with class loader org.apache.spark.sql.hive.client.IsolatedClientLoader$$anon$1@2e5af5c1, see the next exception for details.
+Mon Jun 26 16:51:51 MDT 2017 Thread[Thread-2,5,main] Cleanup action starting
+java.sql.SQLException: Failed to start database 'metastore_db' with class loader org.apache.spark.sql.hive.client.IsolatedClientLoader$$anon$1@2b8f80ba, see the next exception for details.
 	at org.apache.derby.impl.jdbc.SQLExceptionFactory.getSQLException(Unknown Source)
 	at org.apache.derby.impl.jdbc.SQLExceptionFactory.getSQLException(Unknown Source)
 	at org.apache.derby.impl.jdbc.Util.seeNextException(Unknown Source)
@@ -2994,7 +2994,7 @@ java.sql.SQLException: Failed to start database 'metastore_db' with class loader
 	at py4j.commands.CallCommand.execute(CallCommand.java:79)
 	at py4j.GatewayConnection.run(GatewayConnection.java:214)
 	at java.lang.Thread.run(Thread.java:745)
-Caused by: ERROR XJ040: Failed to start database 'metastore_db' with class loader org.apache.spark.sql.hive.client.IsolatedClientLoader$$anon$1@2e5af5c1, see the next exception for details.
+Caused by: ERROR XJ040: Failed to start database 'metastore_db' with class loader org.apache.spark.sql.hive.client.IsolatedClientLoader$$anon$1@2b8f80ba, see the next exception for details.
 	at org.apache.derby.iapi.error.StandardException.newException(Unknown Source)
 	at org.apache.derby.impl.jdbc.SQLExceptionFactory.wrapArgsForTransportAcrossDRDA(Unknown Source)
 	... 108 more
@@ -3359,8 +3359,8 @@ ERROR XSDB6: Another instance of Derby may have already booted the database /Use
 	at java.lang.Thread.run(Thread.java:745)
 ============= end nested exception, level (2) ===========
 Cleanup action completed
-Sat Jun 10 09:29:26 MDT 2017 Thread[Thread-2,5,main] Cleanup action starting
-java.sql.SQLException: Failed to start database 'metastore_db' with class loader org.apache.spark.sql.hive.client.IsolatedClientLoader$$anon$1@2e5af5c1, see the next exception for details.
+Mon Jun 26 16:51:51 MDT 2017 Thread[Thread-2,5,main] Cleanup action starting
+java.sql.SQLException: Failed to start database 'metastore_db' with class loader org.apache.spark.sql.hive.client.IsolatedClientLoader$$anon$1@2b8f80ba, see the next exception for details.
 	at org.apache.derby.impl.jdbc.SQLExceptionFactory.getSQLException(Unknown Source)
 	at org.apache.derby.impl.jdbc.SQLExceptionFactory.getSQLException(Unknown Source)
 	at org.apache.derby.impl.jdbc.Util.seeNextException(Unknown Source)
@@ -3469,7 +3469,7 @@ java.sql.SQLException: Failed to start database 'metastore_db' with class loader
 	at py4j.commands.CallCommand.execute(CallCommand.java:79)
 	at py4j.GatewayConnection.run(GatewayConnection.java:214)
 	at java.lang.Thread.run(Thread.java:745)
-Caused by: ERROR XJ040: Failed to start database 'metastore_db' with class loader org.apache.spark.sql.hive.client.IsolatedClientLoader$$anon$1@2e5af5c1, see the next exception for details.
+Caused by: ERROR XJ040: Failed to start database 'metastore_db' with class loader org.apache.spark.sql.hive.client.IsolatedClientLoader$$anon$1@2b8f80ba, see the next exception for details.
 	at org.apache.derby.iapi.error.StandardException.newException(Unknown Source)
 	at org.apache.derby.impl.jdbc.SQLExceptionFactory.wrapArgsForTransportAcrossDRDA(Unknown Source)
 	... 108 more
