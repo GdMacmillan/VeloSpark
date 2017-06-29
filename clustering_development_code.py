@@ -6,14 +6,16 @@ import time
 import hdbscan
 
 from collections import defaultdict
+from scipy.spatial.distance import pdist, squareform
 
-# df = pd.read_csv("data/activities_large.csv", parse_dates=["start_date", "start_date_local"])
-df = pd.read_csv("data/activities_small.csv", parse_dates=["start_date", "start_date_local"])
+df = pd.read_csv("data/activities_large.csv", parse_dates=["start_date", "start_date_local"])
+# df = pd.read_csv("data/activities_small.csv", parse_dates=["start_date", "start_date_local"], encoding='utf-8')
 
 df = df[df['commute'] == 0] # drop all where commute = true and store as new dataframe, df
 df = df[df['state'] == 'Colorado'] # drop all where state != Colorado
 df = df[df['type'] == 'Ride'] # drop everything that is not of type 'Ride' for now
 df.dropna(subset=['map_summary_polyline'], inplace=True) # drop all where map_summary_polyline is nan
+df.reset_index(drop=True, inplace=True)
 
 data = df[['start_lat', 'start_lng']].values
 
@@ -26,26 +28,15 @@ def get_key_to_indexes_ddict(labels):
         indexes[label].append(index)
     return indexes
 
-def polytrim(poly1, poly2):
-    diff = len(poly1) - len(poly2)
-    rands = np.random.choice(np.arange(0, len(poly1)-2, 2), diff//2, replace=False)
-    return np.delete(poly1, np.hstack((rands,rands+1)))
+def polytrim(poly, diff):
+    rands = np.random.choice(np.arange(0, len(poly)-2, 2), diff//2, replace=False)
+    return np.delete(poly, np.hstack((rands,rands+1)))
 
-def conditional_dist(poly1, poly2):
-    return poly1, poly2
-    # poly1 = np.array(polyline.decode(poly1[1])).flatten()
-    # poly2 = np.array(polyline.decode(poly2[1])).flatten()
-    # if len(poly1) > len(poly2):
-    #     poly1 = polytrim(poly1, poly2)
-    # elif len(poly1) < len(poly2):
-    #     poly2 = polytrim(poly2, poly1)
-    # some_dict[i1] = poly1
-    # some_dict[i2] = poly2
-    # return np.linalg.norm(np.subtract(poly1, poly2)) # return distance between polylines
-
-vfunc = np.vectorize(conditional_dist)
-
-some_dict = {}
+def shorten_decoded_polyines(list_of_arrs):
+    lens = list(map(len, list_of_arrs))
+    diffs = [x - min(lens) for x in lens]
+    new_arr_list = [polytrim(poly, diff) if diff != 0 else poly for poly, diff in zip(list_of_arrs, diffs)]
+    return new_arr_list
 
 def reduce_clusters(chunk):
     chunk_dict = dict(item for item in chunk)  # Convert back to a dict
@@ -56,13 +47,10 @@ def reduce_clusters(chunk):
             continue
         X = df.iloc[v, [36, 37]] # Dataframe object with lats and longs
         n = X.shape[0]
-        lats = X.end_lat.values # array of end latitudes
-        lngs = X.end_lng.values # array of end longitudes
 
-        dsts_end_pts = np.zeros((n, n)) # empty distance array
-        # populate distance array with dists between end lats and longs
-        for i, (lt, lg) in enumerate(zip(lats, lngs)):
-            dsts_end_pts[i] = np.sqrt((lats - lt)**2 + (lngs - lg)**2)
+        end_pts_arr = np.vstack((X.end_lat.values, X.end_lng.values))
+        dsts_end_pts = squareform(pdist(end_pts_arr.T), checks=False)
+
         il1 = np.tril_indices(n) # lower triangle mask
         dsts_end_pts[il1] = -1
 
@@ -72,15 +60,14 @@ def reduce_clusters(chunk):
             new_v = np.array(v)[idxs]
             X = df.iloc[new_v, [33]] # Series object with map summary polyines
             n = X.shape[0]
-            maps = list(X.to_records()) # array of polylines
-
-            dsts_maps = np.zeros((n, n)) # empty distance array
-            # populate distance array
-            for poly in maps:
-                dsts_maps[i] = vfunc(maps, poly)
-            break
+            # maps = X.map_summary_polyline.values # array of polylines
+            list_of_arrs = [np.array(polyline.decode(poly)).flatten() for poly in X.map_summary_polyline.values]
+            list_of_arrs = shorten_decoded_polyines(list_of_arrs)
+            # TODO: Determine if actually need to stire decoded and shortened polylines
+            df.iloc[new_v, [33]] = pd.Series(list_of_arrs, index=new_v) # store new polyline value arrays in the original dataframe
+            dsts_maps = squareform(pdist(list_of_arrs), checks=False)
             il1 = np.tril_indices(n) # lower triangle mask
-            dsts[il1] = -1
+            dsts_maps[il1] = -1
 
             pairs = np.argwhere((dsts_maps <= 1.0) & (dsts_maps is not None) & (dsts_maps > -1))
             idxs = np.array(sorted(set(pairs.flatten()))) # indices of v with the most similar polylines
@@ -94,8 +81,8 @@ def reduce_clusters(chunk):
     return chunk_dict
 
 start = time.time() # start time for function timing
-
-# mapper = get_key_to_indexes_ddict(labels)
+# print("initial labels length: {}".format(len(labels)))
+# init_mapper = get_key_to_indexes_ddict(labels)
 # Break the mapper dict into 4 lists of (key, value) pairs
 items = list(get_key_to_indexes_ddict(labels).items())
 chunksize = 4
@@ -115,6 +102,7 @@ for chunk in output:
 
     mapper[-1].extend(chunk.pop(-1, None))
     mapper.update(chunk)
+# print("final labels length: {}".format(len(labels)))
 
 end = time.time() # end time for function timing
 
