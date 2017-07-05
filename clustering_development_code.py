@@ -21,6 +21,7 @@ data = df[['start_lat', 'start_lng']].values
 
 algorithm = hdbscan.HDBSCAN(min_cluster_size=2) # create HDBSCAN cluster object to generate initial distances
 labels = algorithm.fit_predict(data) # fit to data and generate initial labels
+cluster_centers = np.zeros((len(labels), 7), dtype=object)
 
 def get_key_to_indexes_ddict(labels):
     indexes = defaultdict(list)
@@ -38,12 +39,39 @@ def shorten_decoded_polyines(list_of_arrs):
     new_arr_list = [polytrim(poly, diff) if diff != 0 else poly for poly, diff in zip(list_of_arrs, diffs)]
     return new_arr_list
 
+def get_centroids_minus_1(v):
+    chunk_dict = {}
+    chunk_dict[-1] = {'indices':[], 'centroids':[]}
+
+    orphan_indices = v
+    orphan_poly_centroids = [[np.array(polyline.decode(df.iloc[v, 33])).flatten()] + list(df.iloc[v, 34:40].values) if isinstance(df.iloc[v, 33], str) else [df.iloc[v, 33]] + list(df.iloc[v, 34:40].values) for v in orphan_indices]
+
+    chunk_dict[-1]['indices'].extend(orphan_indices)
+    chunk_dict[-1]['centroids'].extend(orphan_poly_centroids)
+    return chunk_dict
+
+def get_centroids(k, v, final_v, chunk_dict, mean=False, list_of_arrs=None):
+    if mean:
+        poly_centroid = [np.mean(list_of_arrs, 0)] + list(np.mean(df.iloc[final_v, 34:38].values, 0)) + list(df.iloc[final_v[0], 38:40].values)
+        orphan_indices = list(np.setdiff1d(v, final_v))
+        orphan_poly_centroids = [[np.array(polyline.decode(df.iloc[v, 33])).flatten() if isinstance(df.iloc[v, 33], str) else df.iloc[v, 33]] + list(df.iloc[v, 34:40].values) for v in orphan_indices]
+    else:
+        poly_centroid = [np.array(polyline.decode(df.iloc[final_v, 33])).flatten() if isinstance(df.iloc[final_v, 33], str) else df.iloc[final_v, 33]] + list(df.iloc[final_v, 34:40].values)
+        orphan_indices = v[1:]
+        orphan_poly_centroids = [[np.array(polyline.decode(df.iloc[v, 33])).flatten()] + list(df.iloc[v, 34:40].values) if isinstance(df.iloc[v, 33], str) else [df.iloc[v, 33]] + list(df.iloc[v, 34:40].values) for v in orphan_indices]
+
+    chunk_dict[-1]['indices'].extend(orphan_indices)
+    chunk_dict[-1]['centroids'].extend(orphan_poly_centroids)
+    chunk_dict[k] = {'indices': [final_v], 'centroid': poly_centroid}
+    return chunk_dict
+
+
 def reduce_clusters(chunk):
     chunk_dict = dict(item for item in chunk)  # Convert back to a dict
-    chunk_dict[-1] = [] # initial empty list value for key = -1
+    chunk_dict[-1] = {'indices':[], 'centroids':[]} # initial empty list value for key = -1
     for k, v in chunk_dict.items():
         if k == -1:
-            # don't try to further cluster index's in the k=-1 bin
+            # don't try to cluster index's in the k=-1 bin
             continue
         X = df.iloc[v, [36, 37]] # Dataframe object with lats and longs
         n = X.shape[0]
@@ -61,11 +89,11 @@ def reduce_clusters(chunk):
             X = df.iloc[new_v, [33]] # Series object with map summary polyines
             n = X.shape[0]
             # maps = X.map_summary_polyline.values # array of polylines
-            list_of_arrs = [np.array(polyline.decode(poly)).flatten() for poly in X.map_summary_polyline.values]
+            list_of_arrs = [np.array(polyline.decode(poly)).flatten() if isinstance(poly, str) else poly for poly in X.map_summary_polyline.values]
             list_of_arrs = shorten_decoded_polyines(list_of_arrs)
-            # TODO: Determine if actually need to stire decoded and shortened polylines
             df.iloc[new_v, [33]] = pd.Series(list_of_arrs, index=new_v) # store new polyline value arrays in the original dataframe
             dsts_maps = squareform(pdist(list_of_arrs), checks=False)
+            
             il1 = np.tril_indices(n) # lower triangle mask
             dsts_maps[il1] = -1
 
@@ -73,37 +101,53 @@ def reduce_clusters(chunk):
             idxs = np.array(sorted(set(pairs.flatten()))) # indices of v with the most similar polylines
             if idxs.size != 0:
                 final_v = np.array(new_v)[idxs]
-                chunk_dict[-1].extend(list(np.setdiff1d(v, final_v)))
-                chunk_dict[k] = list(final_v)
+                chunk_dict = get_centroids(k, v, final_v, chunk_dict, mean=True, list_of_arrs=list_of_arrs)
+            else:
+                final_v = v[0]
+                chunk_dict = get_centroids(k, v, final_v, chunk_dict)
         else:
-            chunk_dict[-1].extend(v[1:])
-            chunk_dict[k] = [v[0]]
+            final_v = v[0]
+            chunk_dict = get_centroids(k, v, final_v, chunk_dict)
     return chunk_dict
 
 start = time.time() # start time for function timing
 # print("initial labels length: {}".format(len(labels)))
 # init_mapper = get_key_to_indexes_ddict(labels)
 # Break the mapper dict into 4 lists of (key, value) pairs
-items = list(get_key_to_indexes_ddict(labels).items())
+indexes_dict = get_key_to_indexes_ddict(labels)
+minus_1 = indexes_dict.pop(-1)
+items = list(indexes_dict.items())
 chunksize = 4
 chunks = [items[i:i + chunksize ] for i in range(0, len(items), chunksize)]
 pool = mp.Pool(processes=4)
 results = [pool.apply_async(reduce_clusters, args=(x,)) for x in chunks]
 output = [p.get() for p in results]
+output.append(get_centroids_minus_1(minus_1))
 
-
-# the following code creates a mapper and updates the labels array with the correct labels to the indices specified by mapper. mapper may not be necessary as object of this function is to supply the output labels of the fit_predict method. using mapper might be necessary to create cluster centroids which can be stored in the appropriately named class attribute for this clusterer
-
-mapper = defaultdict(list)
-mapper.update(output[0])
+centroid_mapper = defaultdict(list)
+new_label = np.max(labels)
 for chunk in output:
     for k, v in chunk.items():
-        np.put(labels, v, [k] * len(v))
+        np.put(labels, v['indices'], [k] * len(v['indices']))
+        if k == -1:
+            for idx, centroid in zip(v['indices'], v['centroids']):
+                new_label += 1
+                np.put(labels, [idx], [new_label])
+                centroid_mapper[new_label] = centroid
+        else:
+            centroid_mapper[k] = v['centroid']
 
-    mapper[-1].extend(chunk.pop(-1, None))
-    mapper.update(chunk)
-# print("final labels length: {}".format(len(labels)))
+centroids = pd.DataFrame(centroid_mapper).transpose().values
 
 end = time.time() # end time for function timing
 
 print('The function ran for', end - start) # ran for 5248.5 seconds the for the large dataset, 77.5 seconds for the small dataset
+
+# tests
+# df.shape
+# labels.shape # should be the same length as the dataframe
+# np.unique(labels).shape
+# centroids.shape # should be the same length as the unique array of labels
+# np.setdiff1d(np.arange(np.max(labels)), list(centroid_mapper.keys())) # should be an empty array
+# unique, counts = np.unique(labels, return_counts=True)
+# test_dict = dict(zip(unique, counts)) # returns a test dict with the count of each label in the labels array

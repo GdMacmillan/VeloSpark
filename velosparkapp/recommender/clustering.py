@@ -6,6 +6,7 @@ import hdbscan
 import uuid
 import time
 
+from scipy.spatial.distance import pdist, squareform
 from sklearn.base import ClusterMixin
 from collections import defaultdict
 from functools import partial
@@ -16,19 +17,15 @@ def get_key_to_indexes_ddict(labels):
         indexes[label].append(index)
     return indexes
 
-def polytrim(poly1, poly2):
-    diff = len(poly1) - len(poly2)
-    rands = np.random.choice(np.arange(0, len(poly1)-2, 2), diff//2, replace=False)
-    return np.delete(poly1, np.hstack((rands,rands+1)))
+def polytrim(poly, diff):
+    rands = np.random.choice(np.arange(0, len(poly)-2, 2), diff//2, replace=False)
+    return np.delete(poly, np.hstack((rands,rands+1)))
 
-def conditional_dist(poly1, poly2):
-    poly1 = np.array(polyline.decode(poly1)).flatten()
-    poly2 = np.array(polyline.decode(poly2)).flatten()
-    if len(poly1) > len(poly2):
-        poly1 = polytrim(poly1, poly2)
-    elif len(poly1) < len(poly2):
-        poly2 = polytrim(poly2, poly1)
-    return np.linalg.norm(np.subtract(poly1, poly2)) # return distance between polylines
+def shorten_decoded_polyines(list_of_arrs):
+    lens = list(map(len, list_of_arrs))
+    diffs = [x - min(lens) for x in lens]
+    new_arr_list = [polytrim(poly, diff) if diff != 0 else poly for poly, diff in zip(list_of_arrs, diffs)]
+    return new_arr_list
 
 class PolylineClusterMaker(ClusterMixin):
     """A density based clustering module with filtering by location and path matching.
@@ -119,7 +116,7 @@ class PolylineClusterMaker(ClusterMixin):
         self.labels_ = None
         self.cluster_centers_ = None
 
-    def reduce_clusters(self, df, vfunc, chunk):
+    def reduce_clusters(self, df, chunk):
         chunk_dict = dict(item for item in chunk)  # Convert back to a dict
         chunk_dict[-1] = [] # initial empty list value for key = -1
         for k, v in chunk_dict.items():
@@ -129,15 +126,13 @@ class PolylineClusterMaker(ClusterMixin):
 
             X = df.iloc[v, [36, 37]] # Dataframe object with lats and longs
             n = X.shape[0]
-            lats = X.end_lat.values # array of end latitudes
-            lngs = X.end_lng.values # array of end longitudes
 
-            dsts_end_pts = np.zeros((n, n)) # empty distance array
-            # populate distance array with dists between end lats and longs
-            for i, (lt, lg) in enumerate(zip(lats, lngs)):
-                dsts_end_pts[i] = np.sqrt((lats - lt)**2 + (lngs - lg)**2)
+            end_pts_arr = np.vstack((X.end_lat.values, X.end_lng.values))
+            dsts_end_pts = squareform(pdist(end_pts_arr.T), checks=False)
+
             il1 = np.tril_indices(n) # lower triangle mask
             dsts_end_pts[il1] = -1
+
 
             pairs = np.argwhere((dsts_end_pts <= self.end_threshold) & (dsts_end_pts > -1))
             idxs = np.array(sorted(set(pairs.flatten()))) # indices of v with the most similar endpoints
@@ -145,12 +140,11 @@ class PolylineClusterMaker(ClusterMixin):
                 new_v = np.array(v)[idxs]
                 X = df.iloc[new_v, [33]] # Series object with map summary polyines
                 n = X.shape[0]
-                maps = X.map_summary_polyline.values # array of polylines
-
-                dsts_maps = np.zeros((n, n)) # empty distance array
-                # populate distance array
-                for i, poly in enumerate(maps):
-                    dsts_maps[i] = vfunc(poly, maps)
+                # maps = X.map_summary_polyline.values # array of polylines
+                list_of_arrs = [np.array(polyline.decode(poly)).flatten() for poly in X.map_summary_polyline.values]
+                list_of_arrs = shorten_decoded_polyines(list_of_arrs)
+                df.iloc[new_v, [33]] = pd.Series(list_of_arrs, index=new_v) # store new polyline value arrays in the original dataframe
+                dsts_maps = squareform(pdist(list_of_arrs), checks=False)
                 il1 = np.tril_indices(n) # lower triangle mask
                 dsts_maps[il1] = -1
 
@@ -158,10 +152,6 @@ class PolylineClusterMaker(ClusterMixin):
                 idxs = np.array(sorted(set(pairs.flatten()))) # indices of v with the most similar polylines
                 if idxs.size != 0:
                     final_v = np.array(new_v)[idxs]
-                    # TODO: create array of cluster_centers_
-                    # X = df.iloc[final_v, [33, 36, 37]].values
-                    # X[:, 0]
-                    # cluster_polyline =
                     chunk_dict[-1].extend(list(np.setdiff1d(v, final_v)))
                     chunk_dict[k] = list(final_v)
             else:
@@ -170,18 +160,16 @@ class PolylineClusterMaker(ClusterMixin):
         return chunk_dict
 
     def _build_clusters(self, X, predict=True):
-        vfunc = np.vectorize(conditional_dist)
         data = X[['start_lat', 'start_lng']].values
-
         if self.algorithm == 'hdbscan':
             algorithm = hdbscan.HDBSCAN(min_cluster_size=2)
-
+        # currently no other options for clustering algo's
         labels = algorithm.fit_predict(data) # fit to data and generate initial labels
         items = list(get_key_to_indexes_ddict(labels).items())
         chunksize = 4
         chunks = [items[i:i + chunksize ] for i in range(0, len(items), chunksize)]
         pool = mp.Pool(processes=4)
-        results = [pool.apply_async(partial(self.reduce_clusters, X, vfunc), args=(x,)) for x in chunks]
+        results = [pool.apply_async(partial(self.reduce_clusters, X), args=(x,)) for x in chunks]
         output = [p.get() for p in results]
 
         for chunk in output:
@@ -305,10 +293,10 @@ if __name__ == '__main__':
     df = df[df['state'] == 'Colorado'] # drop all where state != Colorado
     df = df[df['type'] == 'Ride'] # drop everything that is not of type 'Ride'
     df.dropna(subset=['map_summary_polyline'], inplace=True) # drop all where map_summary_polyline is nan
-    # df.reset_index(drop=True, inplace=True)
-    msk = np.random.rand(len(df)) < 0.75
-    train = df[msk].reset_index(drop=True)
-    test = df[~msk].reset_index(drop=True)
+    df.reset_index(drop=True, inplace=True)
+    # msk = np.random.rand(len(df)) < 0.75
+    # train = df[msk].reset_index(drop=True)
+    # test = df[~msk].reset_index(drop=True)
 
 
     clusterer = PolylineClusterMaker()
