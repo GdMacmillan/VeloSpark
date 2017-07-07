@@ -2,14 +2,24 @@ import multiprocessing as mp
 import pandas as pd
 import numpy as np
 import polyline
+import copy_reg
 import hdbscan
+import types
 import uuid
 import time
 
 from scipy.spatial.distance import pdist, squareform
-from sklearn.base import ClusterMixin
+# from sklearn.base import ClusterMixin
 from collections import defaultdict
 from functools import partial
+
+def _pickle_method(m):
+    if m.im_self is None:
+        return getattr, (m.im_class, m.im_func.func_name)
+    else:
+        return getattr, (m.im_self, m.im_func.func_name)
+
+copy_reg.pickle(types.MethodType, _pickle_method) # add infrastructure to allow functions to be pickled registering it with the copy_reg standard library method
 
 def get_key_to_indexes_ddict(labels):
     indexes = defaultdict(list)
@@ -27,7 +37,33 @@ def shorten_decoded_polyines(list_of_arrs):
     new_arr_list = [polytrim(poly, diff) if diff != 0 else poly for poly, diff in zip(list_of_arrs, diffs)]
     return new_arr_list
 
-class PolylineClusterMaker(ClusterMixin):
+def get_centroids_minus_1(v):
+    chunk_dict = {}
+    chunk_dict[-1] = {'indices':[], 'centroids':[]}
+
+    orphan_indices = v
+    orphan_poly_centroids = [[np.array(polyline.decode(df.iloc[v, 33])).flatten()] + list(df.iloc[v, 34:40].values) if isinstance(df.iloc[v, 33], str) else [df.iloc[v, 33]] + list(df.iloc[v, 34:40].values) for v in orphan_indices]
+
+    chunk_dict[-1]['indices'].extend(orphan_indices)
+    chunk_dict[-1]['centroids'].extend(orphan_poly_centroids)
+    return chunk_dict
+
+def get_centroids(k, v, final_v, chunk_dict, mean=False, list_of_arrs=None):
+    if mean:
+        poly_centroid = [np.mean(list_of_arrs, 0)] + list(np.mean(df.iloc[final_v, 34:38].values, 0)) + list(df.iloc[final_v[0], 38:40].values)
+        orphan_indices = list(np.setdiff1d(v, final_v))
+        orphan_poly_centroids = [[np.array(polyline.decode(df.iloc[v, 33])).flatten() if isinstance(df.iloc[v, 33], str) else df.iloc[v, 33]] + list(df.iloc[v, 34:40].values) for v in orphan_indices]
+    else:
+        poly_centroid = [np.array(polyline.decode(df.iloc[final_v, 33])).flatten() if isinstance(df.iloc[final_v, 33], str) else df.iloc[final_v, 33]] + list(df.iloc[final_v, 34:40].values)
+        orphan_indices = v[1:]
+        orphan_poly_centroids = [[np.array(polyline.decode(df.iloc[v, 33])).flatten()] + list(df.iloc[v, 34:40].values) if isinstance(df.iloc[v, 33], str) else [df.iloc[v, 33]] + list(df.iloc[v, 34:40].values) for v in orphan_indices]
+
+    chunk_dict[-1]['indices'].extend(orphan_indices)
+    chunk_dict[-1]['centroids'].extend(orphan_poly_centroids)
+    chunk_dict[k] = {'indices': [final_v], 'centroid': poly_centroid}
+    return chunk_dict
+
+class PolylineClusterMaker(object):
     """A density based clustering module with filtering by location and path matching.
 
     Parameters
@@ -107,23 +143,22 @@ class PolylineClusterMaker(ClusterMixin):
     """
 
 
-    def __init__(self, start_threshold=0.01, end_threshold=0.01, path_threshold=1.0, algorithm='hdbscan'):
+    def __init__(self, start_threshold=0.01, end_threshold=0.01, path_threshold=1.0):
 
         self.start_threshold=start_threshold
         self.end_threshold=end_threshold
         self.path_threshold=path_threshold
-        self.algorithm = algorithm
+        self.algorithm = None
         self.labels_ = None
         self.cluster_centers_ = None
 
     def reduce_clusters(self, df, chunk):
         chunk_dict = dict(item for item in chunk)  # Convert back to a dict
-        chunk_dict[-1] = [] # initial empty list value for key = -1
+        chunk_dict[-1] = {'indices':[], 'centroids':[]} # initial empty list value for key = -1
         for k, v in chunk_dict.items():
             if k == -1:
                 # don't try to further cluster index's in the k=-1 bin
                 continue
-
             X = df.iloc[v, [36, 37]] # Dataframe object with lats and longs
             n = X.shape[0]
 
@@ -133,7 +168,6 @@ class PolylineClusterMaker(ClusterMixin):
             il1 = np.tril_indices(n) # lower triangle mask
             dsts_end_pts[il1] = -1
 
-
             pairs = np.argwhere((dsts_end_pts <= self.end_threshold) & (dsts_end_pts > -1))
             idxs = np.array(sorted(set(pairs.flatten()))) # indices of v with the most similar endpoints
             if idxs.size != 0:
@@ -141,10 +175,11 @@ class PolylineClusterMaker(ClusterMixin):
                 X = df.iloc[new_v, [33]] # Series object with map summary polyines
                 n = X.shape[0]
                 # maps = X.map_summary_polyline.values # array of polylines
-                list_of_arrs = [np.array(polyline.decode(poly)).flatten() for poly in X.map_summary_polyline.values]
+                list_of_arrs = [np.array(polyline.decode(poly)).flatten() if isinstance(poly, str) else poly for poly in X.map_summary_polyline.values]
                 list_of_arrs = shorten_decoded_polyines(list_of_arrs)
                 df.iloc[new_v, [33]] = pd.Series(list_of_arrs, index=new_v) # store new polyline value arrays in the original dataframe
                 dsts_maps = squareform(pdist(list_of_arrs), checks=False)
+
                 il1 = np.tril_indices(n) # lower triangle mask
                 dsts_maps[il1] = -1
 
@@ -152,111 +187,54 @@ class PolylineClusterMaker(ClusterMixin):
                 idxs = np.array(sorted(set(pairs.flatten()))) # indices of v with the most similar polylines
                 if idxs.size != 0:
                     final_v = np.array(new_v)[idxs]
-                    chunk_dict[-1].extend(list(np.setdiff1d(v, final_v)))
-                    chunk_dict[k] = list(final_v)
+                    chunk_dict = get_centroids(k, v, final_v, chunk_dict, mean=True, list_of_arrs=list_of_arrs)
+                else:
+                    final_v = v[0]
+                    chunk_dict = get_centroids(k, v, final_v, chunk_dict)
             else:
-                chunk_dict[-1].extend(v[1:])
-                chunk_dict[k] = [v[0]]
+                final_v = v[0]
+                chunk_dict = get_centroids(k, v, final_v, chunk_dict)
         return chunk_dict
 
-    def _build_clusters(self, X, predict=True):
+    def _build_clusters(self, X, method='fit'):
         data = X[['start_lat', 'start_lng']].values
-        if self.algorithm == 'hdbscan':
-            algorithm = hdbscan.HDBSCAN(min_cluster_size=2)
-        # currently no other options for clustering algo's
-        labels = algorithm.fit_predict(data) # fit to data and generate initial labels
+        if method == 'fit':
+            self.algorithm = hdbscan.HDBSCAN(min_cluster_size=2, prediction_data=True) # currently no other option are written for clustering using another method
+            labels = self.algorithm.fit_predict(data) # fit to data and generate initial labels
+        else:
+            labels, strengths = hdbscan.approximate_predict(self.algorithm, data)
+
+        indexes_dict = get_key_to_indexes_ddict(labels)
+        minus_1 = indexes_dict.pop(-1)
         items = list(get_key_to_indexes_ddict(labels).items())
         chunksize = 4
         chunks = [items[i:i + chunksize ] for i in range(0, len(items), chunksize)]
         pool = mp.Pool(processes=4)
         results = [pool.apply_async(partial(self.reduce_clusters, X), args=(x,)) for x in chunks]
         output = [p.get() for p in results]
+        output.append(get_centroids_minus_1(minus_1))
 
+        cluster_mapper = defaultdict(list)
+        if method == 'fit':
+            new_label = np.max(labels)
+        else:
+            new_label = np.max(self.labels_)
         for chunk in output:
             for k, v in chunk.items():
-                np.put(labels, v, [k] * len(v))
-
-        self.labels_ = labels
-
-
-
-        # The below code is the original _build_clusters function
-
-        # if not predict:
-        #     new_idxs = X[X.activity_id.isnull()].index
-        #
-        # lats = X.start_lat.values # array of start latitudes
-        # lngs = X.start_lng.values # array of start longitudes
-        #
-        #
-        # #block of code to time here
-        # dsts = [] # empty distance array
-        # # populate distance array
-        # for (lt, lg) in izip(lats, lngs):
-        #     dsts.append(np.sqrt((lats - lt)**2 + (lngs - lg)**2))
-        # dsts = np.array(dsts) # convert to numpy array
-        # il1 = np.tril_indices(dsts.shape[0]) # lower triangle mask
-        # dsts[il1] = -1
-        #
-        # pairs = np.argwhere((dsts <= self.start_threshold) & (dsts > -1)) # all pairs of indices with distances between start locations shorter than threshold of 0.01
-        # start_clusters = self.make_indexer(pairs)
-        #
-        # subset_pairs = []
-        # for idx1, other_idxs in start_clusters.iteritems():
-        #     for idx2 in other_idxs:
-        #         poly1 = np.array(polyline.decode(X.ix[idx1, 'map_summary_polyline'])).flatten()
-        #         poly2 = np.array(polyline.decode(X.ix[idx2, 'map_summary_polyline'])).flatten()
-        #         dist = self.conditional_dist(poly1, poly2)
-        #         if dist is not None and dist < self.polyline_threshold: # if distance between polylines is not None, add to list
-        #             subset_pairs.append([idx1, idx2])
-        #
-        #
-        # if predict:
-        #     X['activity_id'] = 0 # set column named activity_id values to placeholder
-        # final_clusters = self.make_indexer(subset_pairs) # make new indexer with clusters whose polylines match
-        # # drop keys that are already in another clusters
-        # copy_final_clusters = final_clusters.copy()
-        # for idx1, other_idxs in copy_final_clusters.iteritems():
-        #     for idx2 in other_idxs:
-        #         final_clusters.pop(idx2, None)
-        #
-        # if predict:
-        #     for idx1, other_idxs in final_clusters.iteritems():
-        #         activity_id = uuid.uuid4().hex[:8] # 8 char activity key
-        #         mask_arr = np.array([idx1] + other_idxs)
-        #         X.loc[mask_arr, ['activity_id']] = activity_id
-        # else:
-        #     for idx1, other_idxs in final_clusters.iteritems():
-        #         mask_arr = np.array([idx1] + other_idxs)
-        #         if X.loc[mask_arr, 'activity_id'].isnull().all():
-        #             activity_id = uuid.uuid4().hex[:8] # 8 char activity key
-        #             X.loc[mask_arr, ['activity_id']] = activity_id
-        #         else:
-        #             activity_id = X.loc[mask_arr, 'activity_id'].dropna().values[0]
-        #             X.loc[mask_arr, ['activity_id']] = activity_id
-        #
-        #
-        # # set all remaining activities without a cluster assignment to a new a activity key
-        #
-        # if predict:
-        #     cluster_center_idxs = np.concatenate((np.argwhere(X['activity_id'] == 0).ravel(), np.array(final_clusters.keys())))
-        #     mask1 = X['activity_id'] == 0
-        # else:
-        #     cluster_center_idxs = np.concatenate((np.argwhere(X['activity_id'].isnull()).ravel(), np.array(final_clusters.keys())))
-        #     mask1 = X['activity_id'].isnull()
-        #
-        # X.loc[mask1, ['activity_id']] = X.loc[mask1, ['activity_id']].apply(lambda x: uuid.uuid4().hex[:8], 1)
-        #
-        # cols = ['map_summary_polyline', 'start_lat', 'start_lng', 'end_lat', 'end_lng', 'activity_id']
-        #
-        # if predict:
-        #     self.cluster_centers_ = X.loc[cluster_center_idxs, cols].reset_index()
-        #     self.labels_ = X.activity_id.values
-        # else:
-        #     self.cluster_centers_ = self.cluster_centers_.append( X.loc[np.intersect1d(cluster_center_idxs, new_idxs, assume_unique=True), cols]).reset_index(drop=True)
-        #     labels = X.dropna(subset = ['id']).activity_id.values
-        #     return labels
-        #
+                np.put(labels, v['indices'], [k] * len(v['indices']))
+                if k == -1:
+                    for idx, centroid in zip(v['indices'], v['centroids']):
+                        new_label += 1
+                        np.put(labels, [idx], [new_label])
+                        cluster_mapper[new_label] = centroid
+                else:
+                    cluster_mapper[k] = v['centroid']
+        if method == 'fit':
+            self.labels_ = labels
+            self.cluster_centers_ = pd.DataFrame(cluster_mapper).transpose().values
+        else:
+            cluster_centers_ = pd.DataFrame(cluster_mapper).transpose().values
+            return labels, cluster_centers_
 
     def fit(self, X, y=None):
         """
@@ -268,8 +246,8 @@ class PolylineClusterMaker(ClusterMixin):
         assert (X['end_lat'].isnull().sum() == 0), "all activities must have end_lat"
         assert (X['end_lng'].isnull().sum() == 0), "all activities must have end_lng"
 
-
-        n_samples = X.shape[0]
+        global df
+        df = X
         self._build_clusters(X)
 
     def predict(self, X, y=None):
@@ -280,26 +258,31 @@ class PolylineClusterMaker(ClusterMixin):
 
         return self.labels_
 
-    # def transform(self, X, y=None):
-    #     assert (self.cluster_centers_ is not None), "must run fit method before transform"
-    #     X = pd.concat([self.cluster_centers_, X], ignore_index=True)
-    #
-    #     return self._build_clusters(X, predict=False)
+    def transform(self, X, y=None):
+        """
+        Needs information
+        """
+        assert (self.cluster_centers_ is not None), "must run fit method before transform"
+
+        global df
+        df = X
+        return self._build_clusters(X, method='transform')
 
 if __name__ == '__main__':
 
-    df = pd.read_csv('data/activities_small.csv', encoding='utf-8')
-    df = df[df['commute'] == 0] # drop all where commute = true
-    df = df[df['state'] == 'Colorado'] # drop all where state != Colorado
-    df = df[df['type'] == 'Ride'] # drop everything that is not of type 'Ride'
-    df.dropna(subset=['map_summary_polyline'], inplace=True) # drop all where map_summary_polyline is nan
-    df.reset_index(drop=True, inplace=True)
-    # msk = np.random.rand(len(df)) < 0.75
-    # train = df[msk].reset_index(drop=True)
-    # test = df[~msk].reset_index(drop=True)
+    # dataframe = pd.read_csv('data/activities_large.csv', encoding='utf-8')
+    dataframe = pd.read_csv('data/activities_small.csv', encoding='utf-8')
+    dataframe = dataframef[dataframe['commute'] == 0] # drop all where commute = true
+    dataframe = dataframe[dataframe['state'] == 'Colorado'] # drop all where state != Colorado
+    dataframe = dataframe[dataframe['type'] == 'Ride'] # drop everything that is not of type 'Ride'
+    dataframe.dropna(subset=['map_summary_polyline'], inplace=True) # drop all where map_summary_polyline is nan
+    dataframe.reset_index(drop=True, inplace=True)
+    msk = np.random.rand(len(dataframe)) < 0.75
+    train = dataframe[msk].reset_index(drop=True)
+    test = dataframe[~msk].reset_index(drop=True)
 
 
     clusterer = PolylineClusterMaker()
-    clusterer.fit(df)
-    train_labels = clusterer.predict(df)
-    # test_labels = clusterer.transform(test)
+    clusterer.fit(train)
+    train_labels = clusterer.predict(train)
+    test_labels, centroids = clusterer.transform(test)

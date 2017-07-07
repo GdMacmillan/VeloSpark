@@ -19,9 +19,10 @@ df.reset_index(drop=True, inplace=True)
 
 data = df[['start_lat', 'start_lng']].values
 
-algorithm = hdbscan.HDBSCAN(min_cluster_size=2) # create HDBSCAN cluster object to generate initial distances
+start = time.time() # start time for function timing
+
+algorithm = hdbscan.HDBSCAN(min_cluster_size=2, prediction_data=True) # create HDBSCAN cluster object to generate initial distances
 labels = algorithm.fit_predict(data) # fit to data and generate initial labels
-cluster_centers = np.zeros((len(labels), 7), dtype=object)
 
 def get_key_to_indexes_ddict(labels):
     indexes = defaultdict(list)
@@ -93,7 +94,7 @@ def reduce_clusters(chunk):
             list_of_arrs = shorten_decoded_polyines(list_of_arrs)
             df.iloc[new_v, [33]] = pd.Series(list_of_arrs, index=new_v) # store new polyline value arrays in the original dataframe
             dsts_maps = squareform(pdist(list_of_arrs), checks=False)
-            
+
             il1 = np.tril_indices(n) # lower triangle mask
             dsts_maps[il1] = -1
 
@@ -110,7 +111,7 @@ def reduce_clusters(chunk):
             chunk_dict = get_centroids(k, v, final_v, chunk_dict)
     return chunk_dict
 
-start = time.time() # start time for function timing
+
 # print("initial labels length: {}".format(len(labels)))
 # init_mapper = get_key_to_indexes_ddict(labels)
 # Break the mapper dict into 4 lists of (key, value) pairs
@@ -124,7 +125,7 @@ results = [pool.apply_async(reduce_clusters, args=(x,)) for x in chunks]
 output = [p.get() for p in results]
 output.append(get_centroids_minus_1(minus_1))
 
-centroid_mapper = defaultdict(list)
+cluster_mapper = defaultdict(list)
 new_label = np.max(labels)
 for chunk in output:
     for k, v in chunk.items():
@@ -133,15 +134,20 @@ for chunk in output:
             for idx, centroid in zip(v['indices'], v['centroids']):
                 new_label += 1
                 np.put(labels, [idx], [new_label])
-                centroid_mapper[new_label] = centroid
+                cluster_mapper[new_label] = centroid
         else:
-            centroid_mapper[k] = v['centroid']
+            cluster_mapper[k] = v['centroid']
 
-centroids = pd.DataFrame(centroid_mapper).transpose().values
+cluster_centers = pd.DataFrame(cluster_mapper).transpose().values
 
 end = time.time() # end time for function timing
 
 print('The function ran for', end - start) # ran for 5248.5 seconds the for the large dataset, 77.5 seconds for the small dataset
+
+
+
+
+
 
 # tests
 # df.shape

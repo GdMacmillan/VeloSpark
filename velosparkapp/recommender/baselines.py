@@ -1,8 +1,9 @@
+"""
+https://pymc-devs.github.io/pymc3/notebooks/pmf-pymc.html
+"""
+
 from collections import OrderedDict
-import pandas as pd
 import numpy as np
-
-
 
 # Define our evaluation function.
 def rmse(test_data, predicted):
@@ -14,6 +15,7 @@ def rmse(test_data, predicted):
     sqerror = abs(test_data - predicted) ** 2  # squared error array
     mse = sqerror[I].sum() / N                 # mean squared error
     return np.sqrt(mse)                        # RMSE
+
 
 # Create a base class with scaffolding for our 3 baselines.
 def split_title(title):
@@ -29,41 +31,6 @@ def split_title(title):
     words.append(''.join(tmp))
     return ' '.join(words)
 
-def save_np_vars(vars, savedir):
-    """Save a dictionary of numpy variables to `savedir`. We assume
-    the directory does not exist; an OSError will be raised if it does.
-    """
-    logging.info('writing numpy vars to directory: %s' % savedir)
-    if not os.path.isdir(savedir):
-        os.mkdir(savedir)
-    shapes = {}
-    for varname in vars:
-        data = vars[varname]
-        var_file = os.path.join(savedir, varname + '.txt')
-        np.savetxt(var_file, data.reshape(-1, data.size))
-        shapes[varname] = data.shape
-
-        ## Store shape information for reloading.
-        shape_file = os.path.join(savedir, 'shapes.json')
-        with open(shape_file, 'w') as sfh:
-            json.dump(shapes, sfh)
-
-
-def load_np_vars(savedir):
-    """Load numpy variables saved with `save_np_vars`."""
-    shape_file = os.path.join(savedir, 'shapes.json')
-    with open(shape_file, 'r') as sfh:
-        shapes = json.load(sfh)
-
-    vars = {}
-    for varname, shape in shapes.items():
-        var_file = os.path.join(savedir, varname + '.txt')
-        vars[varname] = np.loadtxt(var_file).reshape(shape)
-
-    return vars
-
-
-# Create a base class with scaffolding for our 3 baselines.
 
 class Baseline(object):
     """Calculate baseline predictions."""
@@ -83,8 +50,6 @@ class Baseline(object):
 
     def __str__(self):
         return split_title(self.__class__.__name__)
-
-
 
 # Implement the 3 baselines.
 class UniformRandomBaseline(Baseline):
@@ -129,7 +94,26 @@ class MeanOfMeansBaseline(Baseline):
                         (global_mean, user_means[i], item_means[j]))
 
 
-baseline_methods = OrderedDict()
-baseline_methods['ur'] = UniformRandomBaseline
-baseline_methods['gm'] = GlobalMeanBaseline
-baseline_methods['mom'] = MeanOfMeansBaseline
+if __name__ == "__main__":
+    baseline_methods = OrderedDict()
+    baseline_methods['ur'] = UniformRandomBaseline
+    baseline_methods['gm'] = GlobalMeanBaseline
+    baseline_methods['mom'] = MeanOfMeansBaseline
+
+    R = np.random.randint(-10,10,1000).astype('float')
+    test = R
+
+    train = R.copy()
+    train[np.random.randint(0,1000,50)] = np.nan
+
+    train = train.reshape(100,10)
+    test = test.reshape(100,10)
+
+    baselines = {}
+    for name in baseline_methods:
+        Method = baseline_methods[name]
+        method = Method(train)
+        baselines[name] = method.rmse(test)
+        print('%s RMSE:\t%.5f' % (method, baselines[name]))
+
+    
