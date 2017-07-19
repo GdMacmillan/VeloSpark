@@ -7,11 +7,14 @@ from django.shortcuts import render
 from django.template import Template, Context
 from django.template.loader_tags import BlockNode
 from django.utils._os import safe_join
+from django.views.generic.base import TemplateView, ContextMixin
+from django.views.generic import DetailView, ListView
+from django.utils import timezone
+from django.views import View
 
 from allaccess.views import OAuthCallback
 
-from api.models import Athlete
-from api.models import StravaUser
+from api.models import Athlete, Activity, Map, StravaUser
 
 
 def get_page_or_404(name):
@@ -33,6 +36,79 @@ def get_page_or_404(name):
             break
     page._meta = meta
     return page
+
+class MyTemplateView(View):
+    def page(self, request, slug):
+        """Render the requested page if found."""
+        file_name = '{}.html'.format(slug)
+        page = get_page_or_404(file_name)
+        context = {
+            'slug': slug,
+            'page': page,
+        }
+        if page._meta is not None:
+        	meta = page._meta.render(Context())
+        	extra_context = json.loads(meta)
+        	context.update(extra_context)
+
+        if request.user.is_authenticated():
+            try:
+                access = request.user.accountaccess_set.all()[0]
+            except IndexError:
+                access = None
+            else:
+                client = access.api_client
+
+                context['info'] = client.get_profile_info(raw_token=access.access_token)
+        return context
+
+    def get(self, request, *args, **kwargs):
+        try:
+            slug = self.kwargs['slug']
+        except KeyError:
+            slug='index'
+        context = self.page(request, slug=slug)
+        return render(request, 'page.html', context)
+
+# class IndexView(MyTemplateView):
+#     template_name = "index.html"
+#
+# class ContactView(MyTemplateView):
+#     template_name = "contact.html"
+
+
+
+
+# class MapView(TemplateView):
+#     template_name = "map.html"
+#
+# class ActivityView(DetailView):
+#     model = Activity
+#     template_name = 'activity.html'
+#
+# class ProfileView(DetailView):
+#     model = Athlete
+#     template_name = 'profile.html'
+#
+#     slug = template_name.split('.')[0]
+#     page = get_page_or_404(template_name)
+#     context = {
+#         'slug': slug,
+#         'page': page,
+#     }
+#     if page._meta is not None:
+#     	meta = page._meta.render(Context())
+#     	extra_context = json.loads(meta)
+#     	context.update(extra_context)
+#
+#     template_name = 'page.html'
+#
+# class RecResultsView(ListView):
+#     model = Athlete
+#     template_name = 'results.html'
+
+
+
 
 def page(request, slug='index'):
     """Render the requested page if found."""
